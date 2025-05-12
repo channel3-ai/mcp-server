@@ -47,7 +47,7 @@ export class MyMCP extends McpAgent<Bindings, State, Props> {
 
     this.server.tool(
       "details",
-      "Get details for a URL",
+      "Get details for a product by its URL",
       { product_url: z.string() },
       async ({ product_url }, extra) => {
         const response = await fetch(
@@ -58,7 +58,7 @@ export class MyMCP extends McpAgent<Bindings, State, Props> {
               "Content-Type": "application/json",
               "x-api-key": this.props.apiKey,
             },
-            body: JSON.stringify({ product_url, mcp: true }),
+            body: JSON.stringify({ product_url }),
           }
         );
         const data = await response.json();
