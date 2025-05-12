@@ -22,19 +22,51 @@ export class MyMCP extends McpAgent<Bindings, State, Props> {
   });
 
   async init() {
-    // Simple addition tool
-    this.server.tool("search", { query: z.string() }, async ({ query }) => {
-      const response = await fetch(`https://api.trychannel3.com/v0/search`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": this.props.apiKey,
-        },
-        body: JSON.stringify({ query, limit: 10 }),
-      });
-      const data = await response.json();
-      return { content: [{ type: "text", text: JSON.stringify(data) }] };
-    });
+    this.server.tool(
+      "search",
+      "Search for content",
+      { query: z.string() },
+      async ({ query }, extra) => {
+        const response = await fetch(
+          `https://api.trychannel3.com/v0/mcp/search`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": this.props.apiKey,
+            },
+            body: JSON.stringify({ query, limit: 10 }),
+          }
+        );
+        const data = await response.json();
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(data) }],
+        };
+      }
+    );
+
+    this.server.tool(
+      "details",
+      "Get details for a URL",
+      { product_url: z.string() },
+      async ({ product_url }, extra) => {
+        const response = await fetch(
+          `https://api.trychannel3.com/v0/mcp/details`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": this.props.apiKey,
+            },
+            body: JSON.stringify({ product_url, mcp: true }),
+          }
+        );
+        const data = await response.json();
+        return {
+          content: [{ type: "text" as const, text: JSON.stringify(data) }],
+        };
+      }
+    );
   }
 }
 
