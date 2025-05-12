@@ -1,23 +1,34 @@
 import { McpAgent } from "agents/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { Hono } from "hono";
 
-// Define our MCP agent with tools
-export class MyMCP extends McpAgent {
+type Bindings = Env;
+
+const app = new Hono<{
+  Bindings: Bindings;
+}>();
+
+type Props = {
+  apiKey: string;
+};
+
+type State = null;
+
+export class MyMCP extends McpAgent<Bindings, State, Props> {
   server = new McpServer({
-    name: "Channel3 MCP",
+    name: "Demo",
     version: "1.0.0",
   });
 
   async init() {
     // Simple addition tool
     this.server.tool("search", { query: z.string() }, async ({ query }) => {
-      const apiKey = "hvEplLaPndU4FlNfiHOi18miDBJuvl66T2naqQEj";
       const response = await fetch(`https://api.trychannel3.com/v0/search`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": apiKey,
+          "x-api-key": this.props.apiKey,
         },
         body: JSON.stringify({ query, limit: 10 }),
       });
@@ -27,21 +38,20 @@ export class MyMCP extends McpAgent {
   }
 }
 
-export default {
-  fetch(request: Request, env: Env, ctx: ExecutionContext) {
-    const url = new URL(request.url);
+app.mount("/", (req, env, ctx) => {
+  // This could technically be pulled out into a middleware function, but is left here for clarity
+  console.log(req.headers);
+  const apiKey = req.headers.get("x-api-key");
+  if (!apiKey) {
+    return new Response("API Key required", { status: 401 });
+  }
 
-    if (url.pathname === "/sse" || url.pathname === "/sse/message") {
-      // @ts-ignore
-      return MyMCP.serveSSE("/sse").fetch(request, env, ctx);
-    }
+  ctx.props = {
+    apiKey: apiKey,
+    // could also add arbitrary headers/parameters here to pass into the MCP client
+  };
 
-    if (url.pathname === "/mcp") {
-      console.log("serving /mcp ,", request, env, ctx);
-      // @ts-ignore
-      return MyMCP.serve("/mcp").fetch(request, env, ctx);
-    }
+  return MyMCP.mount("/sse").fetch(req, env, ctx);
+});
 
-    return new Response("Not found", { status: 404 });
-  },
-};
+export default app;
