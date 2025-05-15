@@ -1,50 +1,77 @@
-# Building a Remote MCP Server on Cloudflare (Without Auth)
+---
+title: 'Overview'
+description: 'Add the Channel3 MCP to your agent'
+---
 
-This example allows you to deploy a remote MCP server that doesn't require authentication on Cloudflare Workers. 
+**Step 1**: **Create an account**
+Create an account to curate your catalog and track affiliate payouts. [Create Account](https://trychannel3.com/sign-up)
 
-## Get started: 
+**Step 2**: **Create an API Key**
+Your API Key will be used to authenticate your requests to the Channel3 MCP and ensure purchases get affiliated to your account. [Create API Key](https://trychannel3.com/dashboard/api)
 
-[![Deploy to Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/ai/tree/main/demos/remote-mcp-authless)
+**Step 3**: Add the Channel3 MCP to your agent.
 
-This will deploy your MCP server to a URL like: `mcp-server.<your-account>.workers.dev/sse`
-
-Alternatively, you can use the command line below to get the remote MCP Server created on your local machine:
-```bash
-npm create cloudflare@latest -- my-mcp-server --template=cloudflare/ai/demos/remote-mcp-authless
-```
-
-## Customizing your MCP Server
-
-To add your own [tools](https://developers.cloudflare.com/agents/model-context-protocol/tools/) to the MCP server, define each tool inside the `init()` method of `src/index.ts` using `this.server.tool(...)`. 
-
-## Connect to Cloudflare AI Playground
-
-You can connect to your MCP server from the Cloudflare AI Playground, which is a remote MCP client:
-
-1. Go to https://playground.ai.cloudflare.com/
-2. Enter your deployed MCP server URL (`mcp-server.<your-account>.workers.dev/sse`)
-3. You can now use your MCP tools directly from the playground!
-
-## Connect Claude Desktop to your MCP server
-
-You can also connect to your remote MCP server from local MCP clients, by using the [mcp-remote proxy](https://www.npmjs.com/package/mcp-remote). 
-
-To connect to your MCP server from Claude Desktop, follow [Anthropic's Quickstart](https://modelcontextprotocol.io/quickstart/user) and within Claude Desktop go to Settings > Developer > Edit Config.
-
-Update with this configuration:
-
+**Claude Config**
 ```json
 {
   "mcpServers": {
-    "calculator": {
+    "Channel3": {
       "command": "npx",
       "args": [
         "mcp-remote",
-        "http://localhost:8787/sse"  // or mcp-server.your-account.workers.dev/sse
-      ]
+        "https://mcp-server.channel3.workers.dev/sse",
+	    "--header",
+	    "x-api-key: ${apiKey}"
+      ],
+      "env": {
+        "apiKey": <your-api-key>
+      }
     }
   }
 }
 ```
 
-Restart Claude and you should see the tools become available. 
+**OpenAI Agents SDK**
+```python
+from openai.agents import Agent
+from agents.mcp import MCPServerStdio
+
+async def main(message: str):
+  async with MCPServerStdio(
+      name="Channel3 MCP Server",
+      cache_tools_list=True,
+      params={
+          "command": "npx",
+          "args": [
+              "mcp-remote",
+              "https://mcp-server.channel3.workers.dev/sse",
+              "--header",
+              "x-api-key: <your-api-key>"
+          ],
+      },
+  ) as mcp_server:
+      print("MCP server connected")
+      # Initialize the agent with the MCP server
+      shopping_agent = Agent(
+          name="Shopping Agent",
+          instructions=(
+              "You are a personal shopping assistant. "
+              "Help the user find the best products for their needs. "
+              "You have access to a tool to search the web for products."
+          ),
+          output_type=TextResponse,
+          model="gpt-4.1-nano",
+          # https://github.com/openai/openai-agents-python/blob/main/examples/mcp/sse_example/main.py
+          mcp_servers=[mcp_server],
+      )
+
+      result = Runner.run_streamed(
+          shopping_agent,
+          input=message,
+      )
+
+      for chunk in result:
+        print(chunk)
+
+asyncio.run(main("I'm looking for a new laptop"))
+```

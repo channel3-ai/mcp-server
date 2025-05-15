@@ -17,14 +17,14 @@ type State = null;
 
 export class MyMCP extends McpAgent<Bindings, State, Props> {
   server = new McpServer({
-    name: "Demo",
+    name: "Channel3",
     version: "1.0.0",
   });
 
   async init() {
     this.server.tool(
       "search",
-      "Search for content",
+      "Search for products that match a query",
       { query: z.string() },
       async ({ query }, extra) => {
         const response = await fetch(
