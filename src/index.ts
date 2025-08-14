@@ -18,36 +18,83 @@ type State = null;
 const BASE_URL = "https://api.trychannel3.com/v0";
 // const BASE_URL = "http://localhost:8000/v0";
 
-// Define Zod schemas matching the OpenAPI spec
-const SearchFilterPriceSchema = z.object({
-  min_price: z.number().nullable().optional(),
-  max_price: z.number().nullable().optional(),
-});
+// Define Zod schemas matching the OpenAPI spec (keep simple to avoid deep type instantiation)
+const SearchFilterPriceSchema = z
+  .object({
+    min_price: z
+      .number()
+      .optional()
+      .describe("Minimum price to include in results (vendor currency units)."),
+    max_price: z
+      .number()
+      .optional()
+      .describe("Maximum price to include in results (vendor currency units)."),
+  })
+  .describe("Price range filter");
 
-const AvailabilityStatusSchema = z.enum([
-  "InStock",
-  "OutOfStock",
-  "PreOrder",
-  "LimitedAvailability",
-  "BackOrder",
-  "Discontinued",
-  "SoldOut",
-  "Unknown",
-]);
+const AvailabilityStatusSchema = z
+  .enum([
+    "InStock",
+    "OutOfStock",
+    "PreOrder",
+    "LimitedAvailability",
+    "BackOrder",
+    "Discontinued",
+    "SoldOut",
+    "Unknown",
+  ])
+  .describe("Availability status filter");
 
-const SearchFiltersSchema = z.object({
-  brand_ids: z.array(z.string()).nullable().optional(),
-  gender: z.enum(["male", "female", "unisex"]).nullable().optional(),
-  price: SearchFilterPriceSchema.nullable().optional(),
-  availability: z.array(AvailabilityStatusSchema).nullable().optional(),
-});
+const SearchFiltersSchema = z
+  .object({
+    brand_ids: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Filter by brand IDs. Brand names can also be included in 'query' and will be parsed automatically."
+      ),
+    gender: z
+      .enum(["male", "female", "unisex"])
+      .optional()
+      .describe("Filter by intended gender"),
+    price: SearchFilterPriceSchema.optional().describe("Filter by price range"),
+    availability: z
+      .array(AvailabilityStatusSchema)
+      .optional()
+      .describe("Filter by one or more availability statuses"),
+  })
+  .describe("Structured filters to refine search results");
 
-const SearchRequestSchema = z.object({
-  query: z.string().nullable().optional(),
-  image_url: z.string().nullable().optional(),
-  limit: z.number().int().nullable().optional().default(20),
-  filters: SearchFiltersSchema.optional().default({}),
-});
+const SearchRequestSchema = z
+  .object({
+    query: z
+      .string()
+      .optional()
+      .describe(
+        "Free-text search. You can include brand names, product types, attributes, colors, pricing, etc."
+      ),
+    image_url: z
+      .string()
+      .optional()
+      .describe("Public URL of an image to find visually similar products"),
+    limit: z
+      .number()
+      .int()
+      .optional()
+      .describe("Maximum number of results to return. Defaults to 20."),
+    filters: SearchFiltersSchema.optional().describe(
+      "Optional structured filters"
+    ),
+    context: z
+      .string()
+      .optional()
+      .describe(
+        "Optional end-user context (preferences, style, size, budget, purpose). Helps ranking and disambiguation."
+      ),
+  })
+  .describe(
+    "Search request. Provide either 'query' or 'image_url' (or both), plus optional filters and user context."
+  );
 
 export class MyMCP extends McpAgent<Bindings, State, Props> {
   server = new McpServer({
@@ -56,57 +103,82 @@ export class MyMCP extends McpAgent<Bindings, State, Props> {
   });
 
   async init() {
+    const searchParamsShape = {
+      query: z.string().optional(),
+      image_url: z.string().optional(),
+      limit: z.number().int().optional(),
+      filters: z
+        .object({
+          brand_ids: z.array(z.string()).optional(),
+          gender: z.enum(["male", "female", "unisex"]).optional(),
+          price: z
+            .object({
+              min_price: z.number().optional(),
+              max_price: z.number().optional(),
+            })
+            .optional(),
+          availability: z.array(AvailabilityStatusSchema).optional(),
+        })
+        .optional(),
+    } as const;
+
     this.server.tool(
       "search",
-      "Search for products that match a query with optional filters",
-      SearchRequestSchema.shape,
+      SearchRequestSchema.shape as any,
       async (params, extra) => {
-        const response = await fetch(`${BASE_URL}/search`, {
+        // Apply runtime defaults to avoid coupling defaults to Zod types
+        const requestBody = {
+          ...params,
+          limit: params.limit ?? 20,
+          filters: params.filters ?? {},
+        } as any;
+
+        const searchResp = await fetch(`${BASE_URL}/search`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "x-api-key": this.props.apiKey,
           },
-          body: JSON.stringify(params),
+          body: JSON.stringify(requestBody),
         });
-        const data = await response.json();
+        const data = await searchResp.json();
         return {
           content: [{ type: "text" as const, text: JSON.stringify(data) }],
         };
       }
     );
 
+    const getProductDetailShape = { product_id: z.string() } as const;
     this.server.tool(
       "get_product_detail",
-      "Get detailed information about a specific product by its ID",
-      { product_id: z.string() },
+      getProductDetailShape as any,
       async ({ product_id }, extra) => {
-        const response = await fetch(`${BASE_URL}/products/${product_id}`, {
+        const productResp = await fetch(`${BASE_URL}/products/${product_id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             "x-api-key": this.props.apiKey,
           },
         });
-        const data = await response.json();
+        const data = await productResp.json();
         return {
           content: [{ type: "text" as const, text: JSON.stringify(data) }],
         };
       }
     );
 
+    const getBrandsShape = {
+      query: z.string().optional(),
+      page: z.number().int().optional(),
+      size: z.number().int().optional(),
+    } as const;
     this.server.tool(
       "get_brands",
-      "Get all brands that the vendor currently sells with optional query",
-      {
-        query: z.string().nullable().optional(),
-        page: z.number().int().optional().default(1),
-        size: z.number().int().optional().default(100),
-      },
+      getBrandsShape as any,
       async (params, extra) => {
         const url = new URL(`${BASE_URL}/brands`);
 
-        if (params.query !== null && params.query !== undefined) {
+        if (params.query !== undefined) {
           url.searchParams.append("query", params.query);
         }
         if (params.page !== undefined) {
@@ -116,33 +188,33 @@ export class MyMCP extends McpAgent<Bindings, State, Props> {
           url.searchParams.append("size", params.size.toString());
         }
 
-        const response = await fetch(url.toString(), {
+        const brandsResp = await fetch(url.toString(), {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             "x-api-key": this.props.apiKey,
           },
         });
-        const data = await response.json();
+        const data = await brandsResp.json();
         return {
           content: [{ type: "text" as const, text: JSON.stringify(data) }],
         };
       }
     );
 
+    const getBrandDetailShape = { brand_id: z.string() } as const;
     this.server.tool(
       "get_brand_detail",
-      "Get detailed information for a specific brand by its ID",
-      { brand_id: z.string() },
+      getBrandDetailShape as any,
       async ({ brand_id }, extra) => {
-        const response = await fetch(`${BASE_URL}/brands/${brand_id}`, {
+        const brandResp = await fetch(`${BASE_URL}/brands/${brand_id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             "x-api-key": this.props.apiKey,
           },
         });
-        const data = await response.json();
+        const data = await brandResp.json();
         return {
           content: [{ type: "text" as const, text: JSON.stringify(data) }],
         };
