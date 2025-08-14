@@ -102,25 +102,6 @@ export class MyMCP extends McpAgent<Bindings, State, Props> {
   });
 
   async init() {
-    const searchParamsShape = {
-      query: z.string().optional(),
-      image_url: z.string().optional(),
-      limit: z.number().int().optional(),
-      filters: z
-        .object({
-          brand_ids: z.array(z.string()).optional(),
-          gender: z.enum(["male", "female", "unisex"]).optional(),
-          price: z
-            .object({
-              min_price: z.number().optional(),
-              max_price: z.number().optional(),
-            })
-            .optional(),
-          availability: z.array(AvailabilityStatusSchema).optional(),
-        })
-        .optional(),
-    } as const;
-
     this.server.tool(
       "search",
       SearchRequestSchema.shape as any,
