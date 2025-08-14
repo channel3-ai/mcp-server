@@ -15,8 +15,8 @@ type Props = {
 
 type State = null;
 
-const BASE_URL = "https://api.trychannel3.com/v0";
-// const BASE_URL = "http://localhost:8000/v0";
+// const BASE_URL = "https://api.trychannel3.com/v0";
+const BASE_URL = "http://localhost:8000/v0";
 
 // Define Zod schemas matching the OpenAPI spec (keep simple to avoid deep type instantiation)
 const SearchFilterPriceSchema = z
@@ -51,7 +51,7 @@ const SearchFiltersSchema = z
       .array(z.string())
       .optional()
       .describe(
-        "Filter by brand IDs. Brand names can also be included in 'query' and will be parsed automatically."
+        "Filter by brand IDs (not brand names). Brand names can also be included in 'query' and will be parsed automatically."
       ),
     gender: z
       .enum(["male", "female", "unisex"])
@@ -223,28 +223,35 @@ export class MyMCP extends McpAgent<Bindings, State, Props> {
   }
 }
 
-app.mount("/", (req, env, ctx) => {
-  // This could technically be pulled out into a middleware function, but is left here for clarity
-  console.log(req.headers);
+// Simple auth wrapper that sets ctx.props for the DO so it can forward the API key
+const withAuth = (
+  handler: (
+    req: Request,
+    env: Bindings,
+    ctx: ExecutionContext
+  ) => Promise<Response>
+) => {
+  return (req: Request, env: Bindings, ctx: ExecutionContext) => {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return new Response("Bearer token required", { status: 401 });
+    }
 
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    console.log("Bearer token required, passed in: ", authHeader);
-    console.log("all headers: ", req.headers);
-    return new Response("Bearer token required", { status: 401 });
-  }
+    const apiKey = authHeader.slice(7);
+    if (!apiKey) {
+      return new Response("API Key required", { status: 401 });
+    }
 
-  const apiKey = authHeader.slice(7); // Remove "Bearer " prefix
-  if (!apiKey) {
-    return new Response("API Key required", { status: 401 });
-  }
-
-  ctx.props = {
-    apiKey,
-    // could also add arbitrary headers/parameters here to pass into the MCP client
+    // Expose props to the Durable Object bootstrap via workers-mcp
+    (ctx as any).props = { apiKey } as Props;
+    return handler(req, env, ctx);
   };
+};
 
-  return MyMCP.mount("/sse").fetch(req, env, ctx);
-});
+// Streamable HTTP transport (POST "/")
+app.mount("/", withAuth(MyMCP.serve("/").fetch));
+
+// SSE transport (GET "/sse" and POST "/sse/message")
+app.mount("/sse", withAuth(MyMCP.serveSSE("/sse").fetch));
 
 export default app;
