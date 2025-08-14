@@ -99,105 +99,235 @@ export class MyMCP extends McpAgent<Bindings, State, Props> {
   server = new McpServer({
     name: "Channel3",
     version: "1.0.0",
-  });
+    // Explicitly advertise tools capability; tool list is static
+    capabilities: { tools: { listChanged: false } } as unknown as any,
+  } as any);
 
   async init() {
     this.server.tool(
       "search",
-      SearchRequestSchema.shape as any,
-      async (params, extra) => {
-        // Apply runtime defaults to avoid coupling defaults to Zod types
-        const requestBody = {
-          ...params,
-          limit: params.limit ?? 20,
-          filters: params.filters ?? {},
-        } as any;
+      "Search products",
+      SearchRequestSchema.shape,
+      { readOnlyHint: true } as any,
+      async (params: z.infer<typeof SearchRequestSchema>, extra) => {
+        try {
+          // Apply runtime defaults to avoid coupling defaults to Zod types
+          const requestBody = {
+            ...params,
+            limit: params.limit ?? 20,
+            filters: params.filters ?? {},
+          } as any;
 
-        const searchResp = await fetch(`${BASE_URL}/search`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": this.props.apiKey,
-          },
-          body: JSON.stringify(requestBody),
-        });
-        const data = await searchResp.json();
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data) }],
-        };
+          const resp = await fetch(`${BASE_URL}/search`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": this.props.apiKey,
+            },
+            body: JSON.stringify(requestBody),
+          });
+
+          if (!resp.ok) {
+            const errorText = await resp.text().catch(() => "");
+            return {
+              content: [
+                {
+                  type: "text" as const,
+                  text: `Search failed (${resp.status}): ${
+                    errorText || resp.statusText
+                  }`,
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const data = await resp.json();
+          return {
+            content: [{ type: "text" as const, text: JSON.stringify(data) }],
+          };
+        } catch (err: any) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Search error: ${err?.message || String(err)}`,
+              },
+            ],
+            isError: true,
+          };
+        }
       }
     );
 
-    const getProductDetailShape = { product_id: z.string() } as const;
+    const GetProductDetailSchema = z
+      .object({ product_id: z.string().describe("Channel3 product ID") })
+      .describe("Retrieve product details by ID");
     this.server.tool(
       "get_product_detail",
-      getProductDetailShape as any,
-      async ({ product_id }, extra) => {
-        const productResp = await fetch(`${BASE_URL}/products/${product_id}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": this.props.apiKey,
-          },
-        });
-        const data = await productResp.json();
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data) }],
-        };
+      "Get product detail",
+      GetProductDetailSchema.shape,
+      { readOnlyHint: true } as any,
+      async (params: z.infer<typeof GetProductDetailSchema>, extra) => {
+        const { product_id } = params;
+        try {
+          const resp = await fetch(`${BASE_URL}/products/${product_id}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": this.props.apiKey,
+            },
+          });
+          if (!resp.ok) {
+            const errorText = await resp.text().catch(() => "");
+            return {
+              content: [
+                {
+                  type: "text" as const,
+                  text: `Get product failed (${resp.status}): ${
+                    errorText || resp.statusText
+                  }`,
+                },
+              ],
+              isError: true,
+            };
+          }
+          const data = await resp.json();
+          return {
+            content: [{ type: "text" as const, text: JSON.stringify(data) }],
+          };
+        } catch (err: any) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Get product error: ${err?.message || String(err)}`,
+              },
+            ],
+            isError: true,
+          };
+        }
       }
     );
 
-    const getBrandsShape = {
-      query: z.string().optional(),
-      page: z.number().int().optional(),
-      size: z.number().int().optional(),
-    } as const;
+    const GetBrandsSchema = z
+      .object({
+        query: z.string().optional().describe("Filter brands by name"),
+        page: z.number().int().optional().describe("Page number (1-based)"),
+        size: z
+          .number()
+          .int()
+          .optional()
+          .describe("Page size (defaults upstream if omitted)"),
+      })
+      .describe("List brands with optional filtering and pagination");
     this.server.tool(
       "get_brands",
-      getBrandsShape as any,
-      async (params, extra) => {
-        const url = new URL(`${BASE_URL}/brands`);
+      "List brands",
+      GetBrandsSchema.shape,
+      { readOnlyHint: true } as any,
+      async (params: z.infer<typeof GetBrandsSchema>, extra) => {
+        try {
+          const url = new URL(`${BASE_URL}/brands`);
 
-        if (params.query !== undefined) {
-          url.searchParams.append("query", params.query);
-        }
-        if (params.page !== undefined) {
-          url.searchParams.append("page", params.page.toString());
-        }
-        if (params.size !== undefined) {
-          url.searchParams.append("size", params.size.toString());
-        }
+          if (params.query !== undefined) {
+            url.searchParams.append("query", params.query);
+          }
+          if (params.page !== undefined) {
+            url.searchParams.append("page", params.page.toString());
+          }
+          if (params.size !== undefined) {
+            url.searchParams.append("size", params.size.toString());
+          }
 
-        const brandsResp = await fetch(url.toString(), {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": this.props.apiKey,
-          },
-        });
-        const data = await brandsResp.json();
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data) }],
-        };
+          const resp = await fetch(url.toString(), {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": this.props.apiKey,
+            },
+          });
+
+          if (!resp.ok) {
+            const errorText = await resp.text().catch(() => "");
+            return {
+              content: [
+                {
+                  type: "text" as const,
+                  text: `Get brands failed (${resp.status}): ${
+                    errorText || resp.statusText
+                  }`,
+                },
+              ],
+              isError: true,
+            };
+          }
+
+          const data = await resp.json();
+          return {
+            content: [{ type: "text" as const, text: JSON.stringify(data) }],
+          };
+        } catch (err: any) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Get brands error: ${err?.message || String(err)}`,
+              },
+            ],
+            isError: true,
+          };
+        }
       }
     );
 
-    const getBrandDetailShape = { brand_id: z.string() } as const;
+    const GetBrandDetailSchema = z
+      .object({ brand_id: z.string().describe("Channel3 brand ID") })
+      .describe("Retrieve brand details by ID");
     this.server.tool(
       "get_brand_detail",
-      getBrandDetailShape as any,
-      async ({ brand_id }, extra) => {
-        const brandResp = await fetch(`${BASE_URL}/brands/${brand_id}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": this.props.apiKey,
-          },
-        });
-        const data = await brandResp.json();
-        return {
-          content: [{ type: "text" as const, text: JSON.stringify(data) }],
-        };
+      "Get brand detail",
+      GetBrandDetailSchema.shape,
+      { readOnlyHint: true } as any,
+      async (params: z.infer<typeof GetBrandDetailSchema>, extra) => {
+        const { brand_id } = params;
+        try {
+          const resp = await fetch(`${BASE_URL}/brands/${brand_id}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": this.props.apiKey,
+            },
+          });
+          if (!resp.ok) {
+            const errorText = await resp.text().catch(() => "");
+            return {
+              content: [
+                {
+                  type: "text" as const,
+                  text: `Get brand failed (${resp.status}): ${
+                    errorText || resp.statusText
+                  }`,
+                },
+              ],
+              isError: true,
+            };
+          }
+          const data = await resp.json();
+          return {
+            content: [{ type: "text" as const, text: JSON.stringify(data) }],
+          };
+        } catch (err: any) {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: `Get brand error: ${err?.message || String(err)}`,
+              },
+            ],
+            isError: true,
+          };
+        }
       }
     );
   }

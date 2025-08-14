@@ -1,4 +1,4 @@
-**_Channel3 MCP Server_**
+# Channel3 MCP Server
 
 **Step 1**: **Create an account**
 Create an account to curate your catalog and track affiliate payouts. [Create Account](https://trychannel3.com/sign-up)
