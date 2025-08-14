@@ -1,7 +1,4 @@
----
-title: 'Overview'
-description: 'Add the Channel3 MCP to your agent'
----
+**_Channel3 MCP Server_**
 
 **Step 1**: **Create an account**
 Create an account to curate your catalog and track affiliate payouts. [Create Account](https://trychannel3.com/sign-up)
@@ -12,6 +9,7 @@ Your API Key will be used to authenticate your requests to the Channel3 MCP and 
 **Step 3**: Add the Channel3 MCP to your agent.
 
 **Claude Config**
+
 ```json
 {
   "mcpServers": {
@@ -19,7 +17,7 @@ Your API Key will be used to authenticate your requests to the Channel3 MCP and 
       "command": "npx",
       "args": [
         "mcp-remote",
-        "https://mcp-server.channel3.workers.dev/sse",
+        "https://mcp.trychannel3.com",
 	    "--header",
 	    "x-api-key: ${apiKey}"
       ],
@@ -32,6 +30,7 @@ Your API Key will be used to authenticate your requests to the Channel3 MCP and 
 ```
 
 **OpenAI Agents SDK**
+
 ```python
 from openai.agents import Agent
 from agents.mcp import MCPServerStdio
@@ -44,7 +43,7 @@ async def main(message: str):
           "command": "npx",
           "args": [
               "mcp-remote",
-              "https://mcp-server.channel3.workers.dev/sse",
+              "https://mcp.trychannel3.com"
               "--header",
               "x-api-key: <your-api-key>"
           ],
