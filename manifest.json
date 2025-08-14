@@ -2,7 +2,7 @@
   "dxt_version": "0.1",
   "name": "channel3-mcp",
   "version": "0.0.0",
-  "description": "Find any product on the internet, and earn commissions on sales",
+  "description": "Find any product online, and earn commissions on sales",
   "author": {
     "name": "Channel3",
     "email": "alex@trychannel3.com"
@@ -14,9 +14,7 @@
     "entry_point": "build/index.js",
     "mcp_config": {
       "command": "node",
-      "args": [
-        "${__dirname}/build/index.js"
-      ],
+      "args": ["${__dirname}/build/index.js"],
       "env": {}
     }
   },
