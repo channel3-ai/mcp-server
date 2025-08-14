@@ -15,8 +15,7 @@ type Props = {
 
 type State = null;
 
-// const BASE_URL = "https://api.trychannel3.com/v0";
-const BASE_URL = "http://localhost:8000/v0";
+const BASE_URL = "https://api.trychannel3.com/v0";
 
 // Define Zod schemas matching the OpenAPI spec (keep simple to avoid deep type instantiation)
 const SearchFilterPriceSchema = z
