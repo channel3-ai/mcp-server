@@ -1,0 +1,14 @@
+{
+  "MyMCP": {
+    "exported_as": "MyMCP",
+    "description": null,
+    "methods": [
+      {
+        "name": "init",
+        "params": [],
+        "returns": null
+      }
+    ],
+    "statics": {}
+  }
+}
