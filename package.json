@@ -2,6 +2,7 @@
   "name": "mcp-server",
   "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "deploy": "workers-mcp docgen src/index.ts && wrangler deploy",
     "dev": "wrangler dev",
