@@ -1,0 +1,16 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.channel3-ai/mcp-server",
+  "description": "Search 100M+ products across thousands of retailers, with live prices and affiliate-aware buy URLs.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/channel3-ai/mcp-server",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.trychannel3.com/"
+    }
+  ]
+}
