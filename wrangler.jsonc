@@ -5,18 +5,25 @@
 {
 	"name": "mcp-server",
 	"main": "src/index.ts",
-	"compatibility_date": "2025-03-10",
+	"compatibility_date": "2026-07-01",
 	"compatibility_flags": ["nodejs_compat"],
+	"vars": {
+		"CHANNEL3_BASE_URL": ""
+	},
 	"migrations": [
 		{
 			"new_sqlite_classes": ["MyMCP"],
 			"tag": "v1"
+		},
+		{
+			"renamed_classes": [{ "from": "MyMCP", "to": "Channel3MCP" }],
+			"tag": "v2"
 		}
 	],
 	"durable_objects": {
 		"bindings": [
 			{
-				"class_name": "MyMCP",
+				"class_name": "Channel3MCP",
 				"name": "MCP_OBJECT"
 			}
 		]
