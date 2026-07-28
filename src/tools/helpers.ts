@@ -29,21 +29,54 @@ export function errorResponse(err: unknown): CallToolResult {
 	};
 }
 
+function logToolCall(
+	toolName: string,
+	ctx: ToolContext,
+	outcome: "success" | "error" | "rate_limited",
+	params: unknown,
+	errorMessage?: string,
+): void {
+	console.log(
+		JSON.stringify({
+			event: "mcp_tool_call",
+			tool: toolName,
+			outcome,
+			params: JSON.stringify(params) ?? "",
+			client_ip: ctx.props.clientIP,
+			user_agent: ctx.props.userAgent,
+			tier: ctx.props.isFreeTier ? "free" : "api_key",
+			...(errorMessage ? { error: errorMessage } : {}),
+		}),
+	);
+}
+
 export async function runTool<P>(
+	toolName: string,
 	getContext: ToolContextGetter,
 	params: P,
 	handler: (params: P, ctx: ToolContext) => Promise<unknown>,
 ): Promise<CallToolResult> {
 	const ctx = getContext();
 	const rateLimitError = await checkRateLimit(ctx);
-	if (rateLimitError) return rateLimitError;
+	if (rateLimitError) {
+		logToolCall(toolName, ctx, "rate_limited", params);
+		return rateLimitError;
+	}
 
 	try {
 		const result = await handler(params, ctx);
+		logToolCall(toolName, ctx, "success", params);
 		return {
 			content: [{ type: "text", text: JSON.stringify(result) }],
 		};
 	} catch (err: unknown) {
+		logToolCall(
+			toolName,
+			ctx,
+			"error",
+			params,
+			err instanceof Error ? err.message : String(err),
+		);
 		return errorResponse(err);
 	}
 }

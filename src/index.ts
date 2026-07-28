@@ -20,6 +20,7 @@ const withProps = (
 			baseURL: env.CHANNEL3_BASE_URL || undefined,
 			isFreeTier: !userApiKey,
 			clientIP: req.headers.get("cf-connecting-ip") || "unknown",
+			userAgent: req.headers.get("user-agent") || "unknown",
 		};
 		return handler(req, env, ctx);
 	};

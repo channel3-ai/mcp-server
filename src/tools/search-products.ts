@@ -16,7 +16,7 @@ export function registerSearchProducts(server: McpServer, getContext: ToolContex
 			annotations: { readOnlyHint: true },
 		},
 		async (params: z.infer<typeof SearchRequestSchema>) =>
-			runTool(getContext, params, (p, ctx) =>
+			runTool("search_products", getContext, params, (p, ctx) =>
 				searchProducts(ctx.props.apiKey, p, ctx.props.baseURL),
 			),
 	);
