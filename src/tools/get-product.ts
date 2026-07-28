@@ -16,7 +16,7 @@ export function registerGetProduct(server: McpServer, getContext: ToolContextGet
 			annotations: { readOnlyHint: true },
 		},
 		async (params: z.infer<typeof GetProductRequestSchema>) =>
-			runTool(getContext, params, (p, ctx) =>
+			runTool("get_product", getContext, params, (p, ctx) =>
 				getProduct(ctx.props.apiKey, p, ctx.props.baseURL),
 			),
 	);
