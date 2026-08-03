@@ -1,7 +1,6 @@
 import type { z } from "zod";
 
 import type { GetProductRequestSchema, SearchRequestSchema } from "../schemas";
-import type { SearchConfig } from "./client";
 import { createClient } from "./client";
 import {
 	formatProductDetail,
@@ -18,12 +17,11 @@ export async function searchProducts(
 ): Promise<ProductSummary[]> {
 	const client = createClient(apiKey, baseURL);
 
-	// `mode` is not yet typed on SearchConfig in the SDK; cast to pass it through `config` to the backend.
 	const page = await client.products.search({
 		query: params.query,
 		image_url: params.image_url,
 		limit: 10,
-		config: { mode: "agentic" } as SearchConfig,
+		config: { mode: "agentic" },
 	});
 
 	return page.products.map(formatProductSummary);

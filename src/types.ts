@@ -8,11 +8,7 @@ export type Props = {
 	userAgent: string;
 };
 
-export type State = null;
-
 export type ToolContext = {
 	props: Props;
 	env: Bindings;
 };
-
-export type ToolContextGetter = () => ToolContext;

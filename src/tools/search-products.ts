@@ -1,11 +1,11 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/server";
+
 import { searchProducts } from "../channel3/products";
-import { SearchRequestSchema } from "../schemas";
-import type { ToolContextGetter } from "../types";
+import { SearchProductsResultSchema, SearchRequestSchema } from "../schemas";
+import type { ToolContext } from "../types";
 import { runTool } from "./helpers";
 
-export function registerSearchProducts(server: McpServer, getContext: ToolContextGetter) {
+export function registerSearchProducts(server: McpServer, ctx: ToolContext) {
 	server.registerTool(
 		"search_products",
 		{
@@ -13,11 +13,12 @@ export function registerSearchProducts(server: McpServer, getContext: ToolContex
 			description:
 				"Search products by natural-language query. The query can be as specific as you need.",
 			inputSchema: SearchRequestSchema,
-			annotations: { readOnlyHint: true },
+			outputSchema: SearchProductsResultSchema,
+			annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
 		},
-		async (params: z.infer<typeof SearchRequestSchema>) =>
-			runTool("search_products", getContext, params, (p, ctx) =>
-				searchProducts(ctx.props.apiKey, p, ctx.props.baseURL),
-			),
+		async (params) =>
+			runTool("search_products", ctx, params, async (p) => ({
+				products: await searchProducts(ctx.props.apiKey, p, ctx.props.baseURL),
+			})),
 	);
 }

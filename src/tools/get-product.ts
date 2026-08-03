@@ -1,22 +1,23 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/server";
+
 import { getProduct } from "../channel3/products";
-import { GetProductRequestSchema } from "../schemas";
-import type { ToolContextGetter } from "../types";
+import { GetProductRequestSchema, ProductDetailResultSchema } from "../schemas";
+import type { ToolContext } from "../types";
 import { runTool } from "./helpers";
 
-export function registerGetProduct(server: McpServer, getContext: ToolContextGetter) {
+export function registerGetProduct(server: McpServer, ctx: ToolContext) {
 	server.registerTool(
 		"get_product",
 		{
 			title: "Get Product",
 			description:
 				"Get full details for one product. Pass a product ID (from a `search_products` result) or URL.",
-			inputSchema: GetProductRequestSchema.shape,
-			annotations: { readOnlyHint: true },
+			inputSchema: GetProductRequestSchema,
+			outputSchema: ProductDetailResultSchema,
+			annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
 		},
-		async (params: z.infer<typeof GetProductRequestSchema>) =>
-			runTool("get_product", getContext, params, (p, ctx) =>
+		async (params) =>
+			runTool("get_product", ctx, params, (p) =>
 				getProduct(ctx.props.apiKey, p, ctx.props.baseURL),
 			),
 	);

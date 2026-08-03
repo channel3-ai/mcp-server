@@ -6,7 +6,6 @@ export function isUrl(input: string): boolean {
 	return URL_PATTERN.test(input.trim());
 }
 
-/** Extract a Channel3 product ID from a trychannel3.com buy link or product page URL, else null. */
 export function extractChannel3ProductId(input: string): string | null {
 	let url: URL;
 	try {
@@ -35,7 +34,6 @@ export function extractChannel3ProductId(input: string): string | null {
 	return null;
 }
 
-/** Resolve a product ID or URL to a full product detail. */
 export async function resolveProductDetail(
 	client: Channel3Client,
 	input: string,
