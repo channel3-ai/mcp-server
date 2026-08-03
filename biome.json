@@ -2,7 +2,14 @@
 	"$schema": "https://biomejs.dev/schemas/2.5.2/schema.json",
 	"assist": { "actions": { "source": { "organizeImports": "on" } } },
 	"files": {
-		"includes": ["**", "!**/worker-configuration.d.ts"]
+		"includes": [
+			"**",
+			"!**/worker-configuration.d.ts",
+			"!skills-lock.json",
+			"!public/storefront",
+			"!ui/src/registry",
+			"!ui/src/components/ui"
+		]
 	},
 	"vcs": {
 		"enabled": true,

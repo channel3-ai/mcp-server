@@ -1,0 +1,91 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Inline apps sit on the chat surface; fullscreen paints its own background. */
+html,
+body {
+	background: transparent;
+}
+
+/* Fullscreen fills the iframe; inline height stays content-driven (the SDK
+ * measures with height:max-content when reporting size to the host). */
+html,
+body,
+#root {
+	height: 100%;
+}
+
+/*
+ * shadcn/ui tokens (vendored from channel3-ui). Each token resolves the MCP
+ * Apps host variable when the SDK has applied one to :root, falling back to
+ * the --fb-* value, which flips per theme for standalone dev. Host variables
+ * already adapt to the host theme, so no .dark overrides are needed for them.
+ */
+:root {
+	--radius: var(--border-radius-md, 0.625rem);
+	--fb-background: oklch(1 0 0);
+	--fb-foreground: oklch(0.145 0 0);
+	--fb-primary: oklch(0.205 0 0);
+	--fb-primary-foreground: oklch(0.985 0 0);
+	--fb-secondary: oklch(0.97 0 0);
+	--fb-secondary-foreground: oklch(0.205 0 0);
+	--fb-muted-foreground: oklch(0.556 0 0);
+	--fb-destructive: oklch(0.577 0.245 27.325);
+	--fb-border: oklch(0.922 0 0);
+	--fb-input: oklch(0.922 0 0);
+	--fb-ring: oklch(0.708 0 0);
+	--background: var(--color-background-primary, var(--fb-background));
+	--foreground: var(--color-text-primary, var(--fb-foreground));
+	--card: var(--color-background-primary, var(--fb-background));
+	--card-foreground: var(--color-text-primary, var(--fb-foreground));
+	--popover: var(--color-background-primary, var(--fb-background));
+	--popover-foreground: var(--color-text-primary, var(--fb-foreground));
+	--primary: var(--color-background-inverse, var(--fb-primary));
+	--primary-foreground: var(--color-text-inverse, var(--fb-primary-foreground));
+	--secondary: var(--color-background-secondary, var(--fb-secondary));
+	--secondary-foreground: var(--color-text-primary, var(--fb-secondary-foreground));
+	--muted: var(--color-background-secondary, var(--fb-secondary));
+	--muted-foreground: var(--color-text-secondary, var(--fb-muted-foreground));
+	--accent: var(--color-background-secondary, var(--fb-secondary));
+	--accent-foreground: var(--color-text-primary, var(--fb-secondary-foreground));
+	--destructive: var(--fb-destructive);
+	--border: var(--color-border-primary, var(--fb-border));
+	--input: var(--color-border-secondary, var(--fb-input));
+	--ring: var(--color-ring-primary, var(--fb-ring));
+	--chart-1: oklch(0.646 0.222 41.116);
+	--chart-2: oklch(0.6 0.118 184.704);
+	--chart-3: oklch(0.398 0.07 227.392);
+	--chart-4: oklch(0.828 0.189 84.429);
+	--chart-5: oklch(0.769 0.188 70.08);
+	--color-price: var(--chart-1);
+}
+
+/*
+ * Fullscreen apps render edge-to-edge; rounded corners read as inset cards.
+ * Unlayered, so it wins over Tailwind's layered utilities without !important.
+ */
+.fullscreen,
+.fullscreen * {
+	border-radius: 0;
+}
+
+.dark {
+	--fb-background: oklch(0.145 0 0);
+	--fb-foreground: oklch(0.985 0 0);
+	--fb-primary: oklch(0.922 0 0);
+	--fb-primary-foreground: oklch(0.205 0 0);
+	--fb-secondary: oklch(0.269 0 0);
+	--fb-secondary-foreground: oklch(0.985 0 0);
+	--fb-muted-foreground: oklch(0.708 0 0);
+	--fb-destructive: oklch(0.704 0.191 22.216);
+	--fb-border: oklch(1 0 0 / 10%);
+	--fb-input: oklch(1 0 0 / 15%);
+	--fb-ring: oklch(0.556 0 0);
+	--chart-1: oklch(0.488 0.243 264.376);
+	--chart-2: oklch(0.696 0.17 162.48);
+	--chart-3: oklch(0.769 0.188 70.08);
+	--chart-4: oklch(0.627 0.265 303.9);
+	--chart-5: oklch(0.645 0.246 16.439);
+}
