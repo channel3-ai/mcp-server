@@ -1,12 +1,11 @@
-/**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
- */
 {
 	"name": "mcp-server",
 	"main": "src/index.ts",
 	"compatibility_date": "2026-07-01",
 	"compatibility_flags": ["nodejs_compat"],
+	"assets": {
+		"directory": "./public"
+	},
 	"vars": {
 		"CHANNEL3_BASE_URL": ""
 	},
@@ -18,22 +17,18 @@
 		{
 			"renamed_classes": [{ "from": "MyMCP", "to": "Channel3MCP" }],
 			"tag": "v2"
+		},
+		{
+			"deleted_classes": ["Channel3MCP"],
+			"tag": "v3"
 		}
 	],
-	"durable_objects": {
-		"bindings": [
-			{
-				"class_name": "Channel3MCP",
-				"name": "MCP_OBJECT"
-			}
-		]
-	},
 	"observability": {
 		"enabled": true,
 		"logs": {
 			"invocation_logs": true,
 			"head_sampling_rate": 1
-		},
+		}
 	},
 	"ratelimits": [
 		{

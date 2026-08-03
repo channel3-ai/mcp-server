@@ -4,7 +4,7 @@ function mainImageUrl(product: ProductDetail): string | undefined {
 	return product.images?.find((i) => i.is_main_image)?.url ?? product.images?.[0]?.url;
 }
 
-// `max_commission_rate` is a developer field; strip it from user-facing output.
+// max_commission_rate is internal; strip it from tool output.
 export function formatOffer(offer: ProductOffer) {
 	const { max_commission_rate, ...rest } = offer;
 	return rest;

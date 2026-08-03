@@ -1,6 +1,6 @@
-import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 
-import type { ToolContext, ToolContextGetter } from "../types";
+import type { ToolContext } from "../types";
 
 export async function checkRateLimit(ctx: ToolContext): Promise<CallToolResult | null> {
 	if (!ctx.props.isFreeTier) return null;
@@ -12,7 +12,7 @@ export async function checkRateLimit(ctx: ToolContext): Promise<CallToolResult |
 			content: [
 				{
 					type: "text",
-					text: "Free tier rate limit exceeded. For unlimited access, get your API key at https://trychannel3.com and add ?apiKey=YOUR_KEY to the MCP URL.",
+					text: "Free tier rate limit exceeded. For unlimited access, get your API key at https://trychannel3.com and send it as an X-API-Key header.",
 				},
 			],
 			isError: true,
@@ -50,13 +50,13 @@ function logToolCall(
 	);
 }
 
+// Spec SHOULD: mirror structuredContent as a text block for text-only clients.
 export async function runTool<P>(
 	toolName: string,
-	getContext: ToolContextGetter,
+	ctx: ToolContext,
 	params: P,
-	handler: (params: P, ctx: ToolContext) => Promise<unknown>,
+	handler: (params: P) => Promise<unknown>,
 ): Promise<CallToolResult> {
-	const ctx = getContext();
 	const rateLimitError = await checkRateLimit(ctx);
 	if (rateLimitError) {
 		logToolCall(toolName, ctx, "rate_limited", params);
@@ -64,10 +64,11 @@ export async function runTool<P>(
 	}
 
 	try {
-		const result = await handler(params, ctx);
+		const structuredContent = await handler(params);
 		logToolCall(toolName, ctx, "success", params);
 		return {
-			content: [{ type: "text", text: JSON.stringify(result) }],
+			content: [{ type: "text", text: JSON.stringify(structuredContent) }],
+			structuredContent,
 		};
 	} catch (err: unknown) {
 		logToolCall(

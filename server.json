@@ -1,16 +1,38 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.channel3-ai/mcp-server",
-  "description": "Search 100M+ products across thousands of retailers, with live prices and affiliate-aware buy URLs.",
-  "version": "1.0.0",
-  "repository": {
-    "url": "https://github.com/channel3-ai/mcp-server",
-    "source": "github"
-  },
-  "remotes": [
-    {
-      "type": "streamable-http",
-      "url": "https://mcp.trychannel3.com/"
-    }
-  ]
+	"$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+	"name": "io.github.channel3-ai/mcp-server",
+	"title": "Channel3",
+	"description": "Search 100M+ products across thousands of retailers, with live prices and affiliate-aware buy URLs.",
+	"version": "4.0.0",
+	"websiteUrl": "https://trychannel3.com",
+	"icons": [
+		{
+			"src": "https://mcp.trychannel3.com/icons/channel3-logo-small-light.svg",
+			"mimeType": "image/svg+xml",
+			"theme": "light"
+		},
+		{
+			"src": "https://mcp.trychannel3.com/icons/channel3-logo-small-dark.svg",
+			"mimeType": "image/svg+xml",
+			"theme": "dark"
+		}
+	],
+	"repository": {
+		"url": "https://github.com/channel3-ai/mcp-server",
+		"source": "github"
+	},
+	"remotes": [
+		{
+			"type": "streamable-http",
+			"url": "https://mcp.trychannel3.com/",
+			"headers": [
+				{
+					"name": "X-API-Key",
+					"description": "API key for unlimited access and affiliate tracking. Create one at https://trychannel3.com. Omit for the rate-limited free tier.",
+					"isRequired": false,
+					"isSecret": true
+				}
+			]
+		}
+	]
 }
