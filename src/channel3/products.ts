@@ -34,15 +34,20 @@ export function findSimilarProductsPage(
 	});
 }
 
+export function combineSearchQueries(queries: readonly string[] | undefined): string | undefined {
+	const normalized = queries?.map((query) => query.trim()).filter(Boolean) ?? [];
+	return normalized.length > 0 ? normalized.join(" or ") : undefined;
+}
+
 export async function searchProducts(
 	apiKey: string,
 	params: z.infer<typeof SearchRequestSchema>,
 	baseURL?: string,
 ): Promise<{ products: ProductSummary[]; next_page_token: string | null }> {
 	const page = await searchProductsPage(createClient(apiKey, baseURL), {
-		query: params.query,
+		query: combineSearchQueries(params.queries),
 		image_url: params.image_url,
-		limit: 20,
+		limit: 8,
 	});
 	return {
 		products: page.products.map(formatProductSummary),

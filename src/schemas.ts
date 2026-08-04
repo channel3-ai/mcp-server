@@ -1,37 +1,42 @@
 import type { PriceHistoryPoint, PriceStatistics, ProductOffer } from "@channel3/sdk/resources";
 import { z } from "zod";
 
+const SearchQuerySchema = z.string().trim().min(1);
+const ImageUrlSchema = z.string();
+
 const searchCriteria = {
-	query: z
-		.string()
-		.optional()
-		.describe(
-			"One product with its objective attributes, as a retailer prints them on the " +
-				"product page. This tool has no filter parameters. Put every constraint in " +
-				"this text: brand, retailer, color, material, size, price, gender.\n" +
-				'Correct: "red leather jacket under $200"\n' +
-				'Correct: "low-top off-white suede sneakers"\n' +
-				'Correct: "leather golf glove under $40"\n' +
-				'Wrong: "cool sneakers"\n' +
-				'Wrong: "good birthday gifts for dad"\n' +
-				'Do not write an opinion word, for example "cool", "stylish", or "best". ' +
-				"The search engine matches an opinion word to the names of products. The " +
-				'query "cool sneakers" returns a shoe line with the name "Cool". Write the ' +
-				"attributes that cause the opinion.",
-		),
-	image_url: z
-		.string()
-		.optional()
-		.describe(
-			"A public URL of an image. The tool finds products that look like the image. " +
-				"Add `query` to search with text and the image together.",
-		),
+	query: SearchQuerySchema.optional().describe(
+		"Product type(s) and constraints in natural language " +
+			"(brand, color, material, size, price, gender).\n" +
+			'Good: "red leather jacket under $200"; "leather golf glove or rangefinder under $40".\n' +
+			'Bad: "gift ideas for dad"; "cool sneakers" (name products, not occasions or opinions).',
+	),
+	image_url: ImageUrlSchema.optional().describe(
+		"Public image URL for visual search. Combine with `query` for text + image.",
+	),
 };
 
 export const SearchRequestSchema = z
-	.object(searchCriteria)
-	.refine((data) => Boolean(data.query || data.image_url), {
-		message: "At least one of `query` or `image_url` is required.",
+	.object({
+		queries: z
+			.array(
+				SearchQuerySchema.describe(
+					"One concrete product type with its relevant constraints.",
+				),
+			)
+			.min(1)
+			.max(8)
+			.optional()
+			.describe(
+				"All product searches for this user request. Put every product type or " +
+					"alternative in this one array. Use one item for a single-product request.",
+			),
+		image_url: ImageUrlSchema.optional().describe(
+			"Public image URL for visual search. Combine with `queries` for text + image.",
+		),
+	})
+	.refine((data) => Boolean(data.queries?.length || data.image_url), {
+		message: "At least one of `queries` or `image_url` is required.",
 	});
 
 export const GetProductsRequestSchema = z.object({

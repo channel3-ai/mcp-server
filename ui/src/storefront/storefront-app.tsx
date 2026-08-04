@@ -153,7 +153,15 @@ function detectPendingInput(
 		case "get_products":
 			return { label: "Fetching product details…" };
 		case "search_products": {
-			const query = typeof args?.query === "string" ? args.query : undefined;
+			const queries = Array.isArray(args?.queries)
+				? args.queries
+						.filter(
+							(value): value is string =>
+								typeof value === "string" && value.trim().length > 0,
+						)
+						.map((value) => value.trim())
+				: [];
+			const query = queries.length > 0 ? queries.join(" or ") : undefined;
 			const imageUrl = typeof args?.image_url === "string" ? args.image_url : undefined;
 			return query || imageUrl ? { query, imageUrl } : null;
 		}
