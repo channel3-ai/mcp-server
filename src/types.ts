@@ -4,6 +4,7 @@ export type Props = {
 	apiKey: string;
 	baseURL?: string;
 	isFreeTier: boolean;
+	isDev: boolean;
 	clientIP: string;
 	userAgent: string;
 };
@@ -11,4 +12,5 @@ export type Props = {
 export type ToolContext = {
 	props: Props;
 	env: Bindings;
+	origin: string;
 };

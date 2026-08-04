@@ -4,23 +4,12 @@ import type {
 	ProductImage,
 	ProductOffer,
 } from "@channel3/sdk/resources";
+import { isInStock } from "@shared/format";
 
-/**
- * Format a numeric amount as a localized currency string. Falls back to a
- * plain `CODE 12.34` string when the runtime doesn't recognize the currency.
- */
-export function formatCurrency(amount: number, currency: string, locale?: string): string {
-	try {
-		return new Intl.NumberFormat(locale, { style: "currency", currency }).format(amount);
-	} catch {
-		return `${currency} ${amount.toFixed(2)}`;
-	}
-}
-
-/** Format a Channel3 `Price` using its embedded currency code. */
-export function formatPrice(price: Price, locale?: string): string {
-	return formatCurrency(price.price, price.currency, locale);
-}
+// Lead-offer selection and price formatting are shared with the worker (tool
+// summaries quote the same "best price" the cards show); re-exported here so
+// kit components keep a single import home.
+export { currencyFormatter, formatCurrency, formatPrice, isInStock, leadOffer } from "@shared/format";
 
 /** True when the price carries a higher pre-discount `compare_at_price`. */
 export function isOnSale(price: Price): boolean {
@@ -41,21 +30,6 @@ export function discountPercent(price: Price): number | null {
 /** Strip protocol and a leading `www.` from a retailer domain for display. */
 export function formatDomain(domain: string): string {
 	return domain.replace(/^https?:\/\//, "").replace(/^www\./, "");
-}
-
-const IN_STOCK: ReadonlySet<AvailabilityStatus> = new Set<AvailabilityStatus>([
-	"InStock",
-	"LimitedAvailability",
-]);
-
-/**
- * The single in-stock definition used across the kit: a status is "in stock"
- * when it's `InStock` or `LimitedAvailability`. Everything else (pre-order,
- * back-order, sold out, …) reads as not in stock for lead-offer selection,
- * sold-out badges, and variant emphasis.
- */
-export function isInStock(status: AvailabilityStatus): boolean {
-	return IN_STOCK.has(status);
 }
 
 const AVAILABILITY_LABELS: Record<AvailabilityStatus, string> = {
@@ -145,17 +119,6 @@ export function pickHoverImage(
 		}
 	}
 	return candidates[0];
-}
-
-/** Lowest-priced offer, preferring in-stock merchants. */
-export function leadOffer(
-	offers: ReadonlyArray<ProductOffer> | undefined,
-): ProductOffer | undefined {
-	if (!offers || offers.length === 0) {
-		return undefined;
-	}
-	const byPrice = [...offers].sort((a, b) => a.price.price - b.price.price);
-	return byPrice.find((offer) => isInStock(offer.availability)) ?? byPrice[0];
 }
 
 /** True when offers exist but none are in stock. */

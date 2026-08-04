@@ -1,44 +1,77 @@
+import { formatCurrency, leadOffer } from "../../shared/format";
 import type { ProductDetail, ProductOffer } from "./client";
 
-function mainImageUrl(product: ProductDetail): string | undefined {
-	return product.images?.find((i) => i.is_main_image)?.url ?? product.images?.[0]?.url;
+const CDN_IMAGE_PREFIX = "https://cdn.trychannel3.com/";
+
+function isCdnImage(image: { url: string }): boolean {
+	return image.url.startsWith(CDN_IMAGE_PREFIX);
 }
 
-// max_commission_rate is internal; strip it from tool output.
+function cdnImages<T extends { url: string }>(images: T[] | undefined): T[] | undefined {
+	return images?.filter(isCdnImage);
+}
+
+function mainImage(product: ProductDetail) {
+	const images = cdnImages(product.images);
+	return images?.find((i) => i.is_main_image) ?? images?.[0];
+}
+
 export function formatOffer(offer: ProductOffer) {
 	const { max_commission_rate, ...rest } = offer;
 	return rest;
 }
 
+export function formatOffers(offers: ProductOffer[] | undefined) {
+	return (offers ?? []).map(formatOffer);
+}
+
 export function formatProductSummary(product: ProductDetail) {
+	const image = mainImage(product);
 	return {
 		id: product.id,
 		title: product.title,
-		brand: product.brands?.map((b) => b.name).join(", "),
-		category: product.category?.title,
+		brands: product.brands,
+		category: product.category,
 		gender: product.gender,
 		age: product.age,
-		image: mainImageUrl(product),
+		images: image ? [image] : [],
 		structured_attributes: product.structured_attributes,
-		offers: (product.offers ?? []).map(formatOffer),
+		offers: formatOffers(product.offers),
 		description: product.description?.slice(0, 280),
 	};
 }
 
-export function formatProductDetail(product: ProductDetail) {
-	const main = mainImageUrl(product);
-	const others =
-		product.images
-			?.filter((i) => !i.is_main_image)
-			.slice(0, 4)
-			.map((i) => i.url) ?? [];
-	const { images: _images, offers: _offers, ...rest } = product;
+export function toPublicProduct(product: ProductDetail): ProductDetail {
+	return { ...product, images: cdnImages(product.images), offers: formatOffers(product.offers) };
+}
+
+export function formatProductDetail(product: ProductDetail): ProductDetail {
+	const stripped = toPublicProduct(product);
 	return {
-		...rest,
-		images: main ? [main, ...others] : others,
-		offers: (product.offers ?? []).map(formatOffer),
+		...stripped,
+		images: stripped.images?.slice(0, 5),
+		description: product.description?.slice(0, 500),
 	};
 }
 
 export type ProductSummary = ReturnType<typeof formatProductSummary>;
-export type ProductDetailFormatted = ReturnType<typeof formatProductDetail>;
+
+type AnchorProduct = {
+	id: string;
+	title: string;
+	brands?: { name: string }[] | null;
+	offers?: Pick<ProductOffer, "availability" | "domain" | "price">[] | null;
+};
+
+export function productAnchorLine(product: AnchorProduct): string {
+	const best = leadOffer(product.offers);
+	const parts = [`"${product.title}"`];
+	const brand = product.brands?.[0]?.name;
+	if (brand) {
+		parts.push(brand);
+	}
+	if (best) {
+		parts.push(`${formatCurrency(best.price.price, best.price.currency)} at ${best.domain}`);
+	}
+	return `- ${parts.join(" — ")} [id: ${product.id}]`;
+}

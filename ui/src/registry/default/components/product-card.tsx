@@ -42,8 +42,9 @@ export interface ProductCardProps extends Omit<React.ComponentProps<"div">, "onS
 	/**
 	 * Called when a color swatch is clicked. Navigate to `value.product_id` (the
 	 * variant's own product) when set. Falls back to {@link ProductCardProps.onSelect}.
+	 * Receives the card's product so parents can pass one stable handler.
 	 */
-	onSelectVariant?: (value: OptionValue) => void;
+	onSelectVariant?: (product: ProductDetail, value: OptionValue) => void;
 	/**
 	 * Show the colorway thumbnail strip between the image and the title. Renders
 	 * the swatch variant option's values (falling back to a single circle of the
@@ -68,7 +69,7 @@ export interface ProductCardProps extends Omit<React.ComponentProps<"div">, "onS
  * Equal-height: the title and price rows are reserved so cards line up
  * regardless of content.
  */
-export function ProductCard({
+export const ProductCard = React.memo(function ProductCard({
 	product,
 	href,
 	onSelect,
@@ -83,6 +84,11 @@ export function ProductCard({
 	const [imageFailed, setImageFailed] = React.useState(false);
 	const [imageLoaded, setImageLoaded] = React.useState(false);
 	const [preview, setPreview] = React.useState<string | null>(null);
+	// The hover overlay is opaque white, so it must never render before the
+	// second image has decoded (or after it fails) — key the states by URL so
+	// recycled cards don't inherit a stale result.
+	const [hoverReadyUrl, setHoverReadyUrl] = React.useState<string | null>(null);
+	const [hoverFailedUrl, setHoverFailedUrl] = React.useState<string | null>(null);
 
 	// A server-rendered image can finish decoding before hydration, so `onLoad`
 	// never fires on the client — reveal it on mount if it's already complete.
@@ -106,7 +112,7 @@ export function ProductCard({
 
 	const onSwatch = (value: OptionValue) => {
 		if (onSelectVariant) {
-			onSelectVariant(value);
+			onSelectVariant(product, value);
 		} else {
 			onSelect?.(product);
 		}
@@ -141,14 +147,19 @@ export function ProductCard({
 					<ImageOff className="size-8" aria-hidden />
 				</div>
 			)}
-			{secondImage && !imageFailed ? (
+			{secondImage && !imageFailed && secondImage.url !== hoverFailedUrl ? (
 				<img
 					src={secondImage.url}
 					alt=""
 					loading={priority ? "eager" : "lazy"}
 					decoding="async"
 					aria-hidden
-					className="absolute inset-0 size-full bg-white object-contain opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+					onLoad={() => setHoverReadyUrl(secondImage.url)}
+					onError={() => setHoverFailedUrl(secondImage.url)}
+					className={cn(
+						"absolute inset-0 size-full bg-white object-contain opacity-0 transition-opacity duration-300",
+						hoverReadyUrl === secondImage.url && "group-hover:opacity-100",
+					)}
 				/>
 			) : null}
 			{preview ? (
@@ -157,6 +168,7 @@ export function ProductCard({
 					alt=""
 					aria-hidden
 					className="absolute inset-0 size-full bg-white object-contain"
+					onError={() => setPreview(null)}
 				/>
 			) : null}
 			{soldOut ? (
@@ -306,7 +318,7 @@ export function ProductCard({
 			{tap(meta)}
 		</div>
 	);
-}
+});
 
 /** Matching loading placeholder for {@link ProductCard}. */
 export function ProductCardSkeleton({ className, ...props }: React.ComponentProps<"div">) {

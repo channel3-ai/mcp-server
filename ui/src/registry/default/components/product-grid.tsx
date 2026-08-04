@@ -88,9 +88,7 @@ export function ProductGrid({
 					href={getHref?.(product)}
 					onSelect={onSelect}
 					onPreload={onPreload}
-					onSelectVariant={
-						onSelectVariant ? (value) => onSelectVariant(product, value) : undefined
-					}
+					onSelectVariant={onSelectVariant}
 					showSwatches={showSwatches}
 					priority={index < PRIORITY_COUNT}
 					locale={locale}

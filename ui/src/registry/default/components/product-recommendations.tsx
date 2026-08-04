@@ -2,7 +2,7 @@ import type { ProductDetail, SearchFilters } from "@channel3/sdk/resources";
 import type * as React from "react";
 
 import { cn } from "@/lib/utils";
-import { ProductCarousel } from "@/registry/default/components/product-carousel";
+import { ProductGrid } from "@/registry/default/components/product-grid";
 import {
 	type SimilarFetcher,
 	useProductRecommendations,
@@ -16,7 +16,7 @@ export interface ProductRecommendationsProps
 	productId: string | undefined;
 	/** Server-side fetcher wrapping `client.products.findSimilar`. */
 	fetchSimilar: SimilarFetcher;
-	/** Heading above the row. Defaults to "You might also like". */
+	/** Heading above the grid. Defaults to "You might also like". */
 	title?: React.ReactNode;
 	/** Max recommendations to request. Defaults to 12. */
 	limit?: number;
@@ -26,7 +26,7 @@ export interface ProductRecommendationsProps
 	eager?: boolean;
 	/** Suspend fetching entirely (e.g. a feature flag). Defaults to `true`. */
 	enabled?: boolean;
-	/** Number of skeleton cards shown while loading. Defaults to 6. */
+	/** Number of skeleton cards shown while loading. Defaults to 8. */
 	skeletonCount?: number;
 	/** Per-product destination URL; makes each card a crawlable `<a href>`. */
 	getHref?: (product: ProductDetail) => string;
@@ -43,10 +43,11 @@ export interface ProductRecommendationsProps
 }
 
 /**
- * Lazy "you might also like" carousel for a PDP. Defers the `findSimilar` fetch
+ * Lazy "you might also like" grid for a PDP. Defers the `findSimilar` fetch
  * until the section scrolls into view (so it never blocks the page), shows a
- * skeleton row while loading, and renders nothing once it's known there are no
- * recommendations. Reuses {@link ProductCarousel} for the row itself.
+ * skeleton grid while loading, and renders nothing once it's known there are no
+ * recommendations. Reuses {@link ProductGrid} so the section matches browse
+ * results and shoppers can keep scrolling down through the full set.
  */
 export function ProductRecommendations({
 	productId,
@@ -56,7 +57,7 @@ export function ProductRecommendations({
 	filters,
 	eager = false,
 	enabled = true,
-	skeletonCount = 6,
+	skeletonCount = 8,
 	getHref,
 	onSelect,
 	onPreload,
@@ -80,6 +81,10 @@ export function ProductRecommendations({
 		return null;
 	}
 
+	// Until the fetch starts, render only the observed section so the heading
+	// doesn't sit above an empty grid.
+	const showGrid = isLoading || products.length > 0;
+
 	return (
 		<section
 			ref={ref}
@@ -87,18 +92,22 @@ export function ProductRecommendations({
 			className={cn("w-full", className)}
 			{...props}
 		>
-			<ProductCarousel
-				title={title}
-				products={products}
-				loading={isLoading && products.length === 0}
-				skeletonCount={skeletonCount}
-				getHref={getHref}
-				onSelect={onSelect}
-				onPreload={onPreload}
-				onSelectVariant={onSelectVariant}
-				showSwatches={showSwatches}
-				locale={locale}
-			/>
+			{showGrid ? (
+				<>
+					<div className="mb-3 text-base font-medium">{title}</div>
+					<ProductGrid
+						products={products}
+						loading={isLoading && products.length === 0}
+						skeletonCount={skeletonCount}
+						getHref={getHref}
+						onSelect={onSelect}
+						onPreload={onPreload}
+						onSelectVariant={onSelectVariant}
+						showSwatches={showSwatches}
+						locale={locale}
+					/>
+				</>
+			) : null}
 		</section>
 	);
 }

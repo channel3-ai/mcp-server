@@ -10,7 +10,7 @@
 		"noEmit": true,
 		"isolatedModules": true,
 		"resolveJsonModule": true,
-		"paths": { "@/*": ["./src/*"] },
+		"paths": { "@/*": ["./src/*"], "@shared/*": ["../shared/*"] },
 		"types": ["vite/client"]
 	},
 	"include": ["src"]

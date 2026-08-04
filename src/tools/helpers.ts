@@ -1,9 +1,24 @@
-import type { CallToolResult } from "@modelcontextprotocol/server";
-
 import type { ToolContext } from "../types";
 
-export async function checkRateLimit(ctx: ToolContext): Promise<CallToolResult | null> {
-	if (!ctx.props.isFreeTier) return null;
+// ext-apps' handler result type comes from its own SDK version, whose
+// CallToolResult is incompatible with the v2 server's on two counts:
+// structuredContent is `Record<string, unknown>` (not `unknown`), and the
+// index signature is required. This is the shape both sides accept.
+export interface ToolCallResult {
+	content: { type: "text"; text: string }[];
+	structuredContent?: Record<string, unknown>;
+	isError?: boolean;
+	[key: string]: unknown;
+}
+
+export const READ_ONLY_ANNOTATIONS = {
+	readOnlyHint: true,
+	idempotentHint: true,
+	openWorldHint: true,
+} as const;
+
+export async function checkRateLimit(ctx: ToolContext): Promise<ToolCallResult | null> {
+	if (!ctx.props.isFreeTier || ctx.props.isDev) return null;
 	const { success } = await ctx.env.FREE_RATE_LIMITER.limit({
 		key: ctx.props.clientIP,
 	});
@@ -21,7 +36,7 @@ export async function checkRateLimit(ctx: ToolContext): Promise<CallToolResult |
 	return null;
 }
 
-export function errorResponse(err: unknown): CallToolResult {
+export function errorResponse(err: unknown): ToolCallResult {
 	const message = err instanceof Error ? err.message : String(err);
 	return {
 		content: [{ type: "text", text: `Error: ${message}` }],
@@ -41,7 +56,7 @@ function logToolCall(
 			event: "mcp_tool_call",
 			tool: toolName,
 			outcome,
-			params: JSON.stringify(params) ?? "",
+			params,
 			client_ip: ctx.props.clientIP,
 			user_agent: ctx.props.userAgent,
 			tier: ctx.props.isFreeTier ? "free" : "api_key",
@@ -50,13 +65,17 @@ function logToolCall(
 	);
 }
 
-// Spec SHOULD: mirror structuredContent as a text block for text-only clients.
-export async function runTool<P>(
+interface RunToolOptions<P, R> {
+	summarize?: (result: R, params: P) => string;
+}
+
+export async function runTool<P, R extends Record<string, unknown>>(
 	toolName: string,
 	ctx: ToolContext,
 	params: P,
-	handler: (params: P) => Promise<unknown>,
-): Promise<CallToolResult> {
+	handler: (params: P) => Promise<R>,
+	options?: RunToolOptions<P, R>,
+): Promise<ToolCallResult> {
 	const rateLimitError = await checkRateLimit(ctx);
 	if (rateLimitError) {
 		logToolCall(toolName, ctx, "rate_limited", params);
@@ -67,7 +86,14 @@ export async function runTool<P>(
 		const structuredContent = await handler(params);
 		logToolCall(toolName, ctx, "success", params);
 		return {
-			content: [{ type: "text", text: JSON.stringify(structuredContent) }],
+			content: [
+				{
+					type: "text",
+					text: options?.summarize
+						? options.summarize(structuredContent, params)
+						: JSON.stringify(structuredContent),
+				},
+			],
 			structuredContent,
 		};
 	} catch (err: unknown) {

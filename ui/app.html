@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="color-scheme" content="light dark" />
+		<title>Channel3 Storefront</title>
+		<style>
+			.boot-skeleton {
+				display: flex;
+				gap: 1rem;
+				overflow: hidden;
+			}
+			.boot-card {
+				display: flex;
+				width: 10rem;
+				flex-shrink: 0;
+				flex-direction: column;
+			}
+			.boot-img,
+			.boot-line {
+				border-radius: 0.375rem;
+				background: light-dark(rgba(0, 0, 0, 0.07), rgba(255, 255, 255, 0.09));
+				animation: boot-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+			}
+			.boot-img {
+				width: 100%;
+				aspect-ratio: 1;
+			}
+			.boot-line {
+				height: 0.75rem;
+				width: 33%;
+				margin-top: 0.75rem;
+			}
+			.boot-line + .boot-line {
+				height: 1rem;
+				width: 80%;
+				margin-top: 0.5rem;
+			}
+			.boot-line + .boot-line + .boot-line {
+				width: 25%;
+				margin-top: 0.75rem;
+			}
+			@keyframes boot-pulse {
+				50% {
+					opacity: 0.5;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<div id="root">
+			<div class="boot-skeleton" aria-hidden="true">
+				<div class="boot-card">
+					<div class="boot-img"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+				</div>
+				<div class="boot-card">
+					<div class="boot-img"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+				</div>
+				<div class="boot-card">
+					<div class="boot-img"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+				</div>
+				<div class="boot-card">
+					<div class="boot-img"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+				</div>
+				<div class="boot-card">
+					<div class="boot-img"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+				</div>
+				<div class="boot-card">
+					<div class="boot-img"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+				</div>
+				<div class="boot-card">
+					<div class="boot-img"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+				</div>
+				<div class="boot-card">
+					<div class="boot-img"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+					<div class="boot-line"></div>
+				</div>
+			</div>
+		</div>
+		<script type="module" src="./src/main.tsx"></script>
+	</body>
+</html>

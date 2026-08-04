@@ -4,6 +4,7 @@ export type Channel3Client = Channel3;
 export type ProductDetail = Channel3.ProductDetail;
 export type ProductOffer = Channel3.ProductOffer;
 export type SearchConfig = Channel3.SearchConfig;
+export type SearchFilters = Channel3.SearchFilters;
 
 export function createClient(apiKey: string, baseURL?: string) {
 	return new Channel3({ apiKey, baseURL });
