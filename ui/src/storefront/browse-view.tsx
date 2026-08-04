@@ -68,9 +68,10 @@ export function BrowseView({
 	const searching = criteria && search.isPending && !search.isPlaceholderData;
 
 	const [sentinel, setSentinel] = React.useState<HTMLDivElement | null>(null);
-	const { hasNextPage, isFetchingNextPage, fetchNextPage } = search;
+	const { hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage } = search;
 	useInViewport(sentinel, () => void fetchNextPage(), {
-		enabled: hasNextPage && !isFetchingNextPage,
+		// Without the error gate, re-subscribing on settle refires immediately and storms.
+		enabled: hasNextPage && !isFetchingNextPage && !isFetchNextPageError,
 		rootMargin: "200px",
 	});
 
@@ -118,6 +119,17 @@ export function BrowseView({
 				)}
 				{isFetchingNextPage ? (
 					<ProductGrid products={[]} loading skeletonCount={4} />
+				) : null}
+				{isFetchNextPageError ? (
+					<div
+						role="status"
+						className="flex items-center justify-center gap-3 py-4 text-sm text-muted-foreground"
+					>
+						<span>Couldn't load more products.</span>
+						<Button variant="outline" size="sm" onClick={() => void fetchNextPage()}>
+							Retry
+						</Button>
+					</div>
 				) : null}
 				{hasNextPage ? <div ref={setSentinel} aria-hidden className="h-px" /> : null}
 			</div>

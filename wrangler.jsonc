@@ -8,7 +8,10 @@
 		"binding": "ASSETS"
 	},
 	"vars": {
-		"CHANNEL3_BASE_URL": ""
+		"CHANNEL3_BASE_URL": "",
+		// Hosts exempt from the free-tier limit; see isVerifiedHost.
+		"HOST_BYPASS_CIDRS": "160.79.104.0/21",
+		"HOST_BYPASS_MTLS_ISSUERS": "OpenAI-Connectors-mTLS-CA"
 	},
 	"migrations": [
 		{

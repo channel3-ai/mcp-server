@@ -16,7 +16,7 @@ app.use("/", async (c, next) => {
 });
 
 app.mount("/", (req, env, ctx) =>
-	createMcpHandler((mcpCtx) => createServer(env, mcpCtx.requestInfo ?? req), {
+	createMcpHandler(() => createServer(env, req), {
 		route: "/",
 		legacy: "stateless",
 	})(req, env, ctx),

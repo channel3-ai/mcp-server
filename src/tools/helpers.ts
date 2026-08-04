@@ -1,9 +1,6 @@
 import type { ToolContext } from "../types";
 
-// ext-apps' handler result type comes from its own SDK version, whose
-// CallToolResult is incompatible with the v2 server's on two counts:
-// structuredContent is `Record<string, unknown>` (not `unknown`), and the
-// index signature is required. This is the shape both sides accept.
+// The one CallToolResult shape both ext-apps' SDK version and the v2 server accept.
 export interface ToolCallResult {
 	content: { type: "text"; text: string }[];
 	structuredContent?: Record<string, unknown>;
@@ -17,8 +14,8 @@ export const READ_ONLY_ANNOTATIONS = {
 	openWorldHint: true,
 } as const;
 
-export async function checkRateLimit(ctx: ToolContext): Promise<ToolCallResult | null> {
-	if (!ctx.props.isFreeTier || ctx.props.isDev) return null;
+async function checkRateLimit(ctx: ToolContext): Promise<ToolCallResult | null> {
+	if (!ctx.props.isFreeTier || ctx.props.isDev || ctx.props.isVerifiedHost) return null;
 	const { success } = await ctx.env.FREE_RATE_LIMITER.limit({
 		key: ctx.props.clientIP,
 	});
@@ -60,6 +57,7 @@ function logToolCall(
 			client_ip: ctx.props.clientIP,
 			user_agent: ctx.props.userAgent,
 			tier: ctx.props.isFreeTier ? "free" : "api_key",
+			verified_host: ctx.props.isVerifiedHost,
 			...(errorMessage ? { error: errorMessage } : {}),
 		}),
 	);
