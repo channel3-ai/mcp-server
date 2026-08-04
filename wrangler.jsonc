@@ -5,6 +5,10 @@
 	"base_dir": "./",
 	"compatibility_date": "2026-07-01",
 	"compatibility_flags": ["nodejs_compat"],
+	// The UI bundle is gitignored, so every build path must produce it before bundling.
+	"build": {
+		"command": "pnpm build:ui"
+	},
 	"assets": {
 		"directory": "./public",
 		// Default auto-trailing-slash strips .html; serve assets at literal paths.

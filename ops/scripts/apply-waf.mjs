@@ -8,9 +8,23 @@ const ZONE_ID = "db47370b88403a171142175e28e98f52";
 const RULESET_ID = "18b89293b60b425881ecb75bf6146e94";
 const RULE_ID = "371f3ad95bd542ba8d829d680a39056f";
 
-const token = process.env.CF_AUTH_TOKEN;
+// Wrangler's OAuth login only carries zone:read, so this needs its own token.
+async function readToken() {
+	const fromEnv = process.env.CLOUDFLARE_API_TOKEN ?? process.env.CF_AUTH_TOKEN;
+	if (fromEnv) return fromEnv;
+	const devVars = await readFile(new URL("../../.dev.vars", import.meta.url), "utf8").catch(
+		() => "",
+	);
+	return devVars.match(/^\s*(?:CLOUDFLARE_API_TOKEN|CF_AUTH_TOKEN)\s*=\s*"?([^"\n]+)"?/m)?.[1];
+}
+
+const token = await readToken();
 if (!token) {
-	console.error("CF_AUTH_TOKEN is not set. Create a token with Zone > Zone WAF > Edit.");
+	console.error(
+		"No Cloudflare API token found. Set CLOUDFLARE_API_TOKEN, or add it to .dev.vars (gitignored).\n" +
+			"Create one at https://dash.cloudflare.com/profile/api-tokens > Create Token > Create Custom Token,\n" +
+			"with the Zone group permission 'Zone WAF' set to Edit, scoped to the trychannel3.com zone.",
+	);
 	process.exit(1);
 }
 
