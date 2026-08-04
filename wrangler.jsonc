@@ -1,17 +1,17 @@
 {
 	"name": "mcp-server",
 	"main": "src/index.ts",
+	// Widened past src/ so the bundled UI under public/ is inside the module root.
+	"base_dir": "./",
 	"compatibility_date": "2026-07-01",
 	"compatibility_flags": ["nodejs_compat"],
 	"assets": {
 		"directory": "./public",
-		"binding": "ASSETS"
+		// Default auto-trailing-slash strips .html; serve assets at literal paths.
+		"html_handling": "none"
 	},
 	"vars": {
-		"CHANNEL3_BASE_URL": "",
-		// Hosts exempt from the free-tier limit; see isVerifiedHost.
-		"HOST_BYPASS_CIDRS": "160.79.104.0/21",
-		"HOST_BYPASS_MTLS_ISSUERS": "OpenAI-Connectors-mTLS-CA"
+		"CHANNEL3_BASE_URL": ""
 	},
 	"migrations": [
 		{
@@ -33,12 +33,5 @@
 			"invocation_logs": true,
 			"head_sampling_rate": 1
 		}
-	},
-	"ratelimits": [
-		{
-			"name": "FREE_RATE_LIMITER",
-			"namespace_id": "1001",
-			"simple": { "limit": 10, "period": 60 }
-		}
-	]
+	}
 }

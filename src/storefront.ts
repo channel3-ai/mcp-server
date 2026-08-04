@@ -5,7 +5,8 @@ import {
 } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
 
-import type { ToolContext } from "./types";
+// Bundled, not fetched, so a missing UI build fails the build instead of a user's session.
+import storefrontHtml from "../public/storefront/app.html";
 
 export const STOREFRONT_RESOURCE_URI = "ui://storefront/app.html";
 
@@ -23,31 +24,7 @@ const STOREFRONT_UI_META = {
 	},
 };
 
-let htmlPromise: Promise<string> | null = null;
-
-function fetchStorefrontHtml(ctx: ToolContext): Promise<string> {
-	return ctx.env.ASSETS.fetch(new Request(new URL("/storefront/app.html", ctx.origin))).then(
-		(response) => {
-			if (!response.ok) {
-				throw new Error(`Failed to load storefront UI (HTTP ${response.status}).`);
-			}
-			return response.text();
-		},
-	);
-}
-
-function loadStorefrontHtml(ctx: ToolContext): Promise<string> {
-	if (ctx.props.isDev) {
-		return fetchStorefrontHtml(ctx);
-	}
-	htmlPromise ??= fetchStorefrontHtml(ctx).catch((err: unknown) => {
-		htmlPromise = null;
-		throw err;
-	});
-	return htmlPromise;
-}
-
-export function registerStorefrontResource(server: McpServer, ctx: ToolContext) {
+export function registerStorefrontResource(server: McpServer) {
 	registerAppResource(
 		asExtAppsServer(server),
 		"Channel3 Storefront",
@@ -57,12 +34,12 @@ export function registerStorefrontResource(server: McpServer, ctx: ToolContext) 
 			description: "Interactive storefront for browsing Channel3 products.",
 			_meta: STOREFRONT_UI_META,
 		},
-		async () => ({
+		() => ({
 			contents: [
 				{
 					uri: STOREFRONT_RESOURCE_URI,
 					mimeType: RESOURCE_MIME_TYPE,
-					text: await loadStorefrontHtml(ctx),
+					text: storefrontHtml,
 					_meta: STOREFRONT_UI_META,
 				},
 			],
