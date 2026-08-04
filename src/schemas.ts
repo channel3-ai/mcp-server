@@ -6,8 +6,13 @@ const searchCriteria = {
 		.string()
 		.optional()
 		.describe(
-			"Natural-language product search. Include any constraints inline (brand, " +
-				"retailer, category, color, size, price range, gender, etc.).",
+			"One specific product, described concretely: item type plus attributes, e.g. " +
+				"'self-stirring coffee mug' or 'red leather jacket under $200'. This is " +
+				"semantic (meaning-based) search, not keyword matching - synonym lists and " +
+				"generic category words like 'good birthday gifts' dilute the " +
+				"embedding and return generic results. One concrete idea per call; run " +
+				"separate searches for separate ideas. Constraints (brand, retailer, " +
+				"color, size, price range, gender) go inline in the description.",
 		),
 	image_url: z
 		.string()

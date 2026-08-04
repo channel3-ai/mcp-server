@@ -15,7 +15,11 @@ export function registerSearchProducts(server: McpServer, ctx: ToolContext) {
 		{
 			title: "Search Products",
 			description:
-				"Search products by natural-language query. The query can be as specific as you need. " +
+				"Semantic search over 100M+ products: each call takes one concrete product " +
+				"description. For broad or open-ended requests (e.g. 'clothes for the winter', 'gift " +
+				"ideas'), first brainstorm a few distinct concrete product types yourself, then " +
+				"run one search per type in parallel calls - never collapse the request into a " +
+				"single list of keywords. " +
 				"Results render as interactive product cards the user can already see - keep your " +
 				"reply to brief commentary or a recommendation, not a re-listing. As the user " +
 				"scrolls, the products they load are synced to your context (title, id, price); " +
