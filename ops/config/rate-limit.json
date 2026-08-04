@@ -1,0 +1,24 @@
+{
+	"description": "Free tier MCP abuse protection",
+	"expression": "http.host eq \"mcp.trychannel3.com\"\nand len(http.request.headers[\"x-api-key\"]) == 0\nand len(http.request.headers[\"authorization\"]) == 0\nand not ip.src in {160.79.104.0/21}\nand not cf.tls_client_auth.cert_verified",
+	"action": "block",
+	"action_parameters": {
+		"response": {
+			"content": "{\"error\":\"Rate limit exceeded. Get a free API key at https://trychannel3.com and send it as an X-API-Key header for unlimited access.\"}",
+			"content_type": "application/json",
+			"status_code": 429
+		}
+	},
+	"enabled": true,
+	"position": {
+		"index": 1
+	},
+	"ratelimit": {
+		"characteristics": ["ip.src"],
+		"mitigation_timeout": 60,
+		"period": 60,
+		"requests_per_period": 600,
+		"requests_to_origin": true,
+		"rate_exceeds": "request_base"
+	}
+}

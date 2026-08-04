@@ -14,25 +14,6 @@ export const READ_ONLY_ANNOTATIONS = {
 	openWorldHint: true,
 } as const;
 
-async function checkRateLimit(ctx: ToolContext): Promise<ToolCallResult | null> {
-	if (!ctx.props.isFreeTier || ctx.props.isDev || ctx.props.isVerifiedHost) return null;
-	const { success } = await ctx.env.FREE_RATE_LIMITER.limit({
-		key: ctx.props.clientIP,
-	});
-	if (!success) {
-		return {
-			content: [
-				{
-					type: "text",
-					text: "Free tier rate limit exceeded. For unlimited access, get your API key at https://trychannel3.com and send it as an X-API-Key header.",
-				},
-			],
-			isError: true,
-		};
-	}
-	return null;
-}
-
 export function errorResponse(err: unknown): ToolCallResult {
 	const message = err instanceof Error ? err.message : String(err);
 	return {
@@ -44,7 +25,7 @@ export function errorResponse(err: unknown): ToolCallResult {
 function logToolCall(
 	toolName: string,
 	ctx: ToolContext,
-	outcome: "success" | "error" | "rate_limited",
+	outcome: "success" | "error",
 	params: unknown,
 	errorMessage?: string,
 ): void {
@@ -57,7 +38,6 @@ function logToolCall(
 			client_ip: ctx.props.clientIP,
 			user_agent: ctx.props.userAgent,
 			tier: ctx.props.isFreeTier ? "free" : "api_key",
-			verified_host: ctx.props.isVerifiedHost,
 			...(errorMessage ? { error: errorMessage } : {}),
 		}),
 	);
@@ -74,12 +54,6 @@ export async function runTool<P, R extends Record<string, unknown>>(
 	handler: (params: P) => Promise<R>,
 	options?: RunToolOptions<P, R>,
 ): Promise<ToolCallResult> {
-	const rateLimitError = await checkRateLimit(ctx);
-	if (rateLimitError) {
-		logToolCall(toolName, ctx, "rate_limited", params);
-		return rateLimitError;
-	}
-
 	try {
 		const structuredContent = await handler(params);
 		logToolCall(toolName, ctx, "success", params);

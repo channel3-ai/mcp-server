@@ -4,8 +4,10 @@
 	"private": true,
 	"license": "MIT",
 	"scripts": {
-		"deploy": "pnpm build:ui && wrangler deploy",
-		"dev": "pnpm build:ui && wrangler dev",
+		"deploy": "wrangler deploy && pnpm smoke",
+		"smoke": "node ops/scripts/smoke.mjs",
+		"waf:apply": "node ops/scripts/apply-waf.mjs",
+		"dev": "wrangler dev",
 		"build:ui": "vite build ui",
 		"typecheck:ui": "tsc -p ui/tsconfig.json",
 		"format": "biome format --write",

@@ -1,13 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/server";
 
 import pkg from "../package.json";
-import { isVerifiedHost } from "./host-identity";
 import { registerPrompts } from "./prompts";
 import { registerStorefrontResource } from "./storefront";
 import { registerTools } from "./tools/register";
 import type { Bindings, Props, ToolContext } from "./types";
-
-const DEV_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
 
 // Bearer is a fallback because OpenAI's hosted MCP tool sends its credential that way.
 function readApiKey(request: Request): string | undefined {
@@ -26,8 +23,6 @@ export function createServer(env: Bindings, request: Request) {
 		apiKey: apiKey || env.DEFAULT_CHANNEL3_API_KEY,
 		baseURL: env.CHANNEL3_BASE_URL || undefined,
 		isFreeTier: !apiKey,
-		isDev: DEV_HOSTNAMES.has(url.hostname),
-		isVerifiedHost: isVerifiedHost(env, request),
 		clientIP: request.headers.get("cf-connecting-ip") || "unknown",
 		userAgent: request.headers.get("user-agent") || "unknown",
 	};
@@ -72,6 +67,6 @@ export function createServer(env: Bindings, request: Request) {
 	const ctx: ToolContext = { props, env, origin };
 	registerTools(server, ctx);
 	registerPrompts(server);
-	registerStorefrontResource(server, ctx);
+	registerStorefrontResource(server);
 	return server;
 }

@@ -4,8 +4,6 @@ export type Props = {
 	apiKey: string;
 	baseURL?: string;
 	isFreeTier: boolean;
-	isDev: boolean;
-	isVerifiedHost: boolean;
 	clientIP: string;
 	userAgent: string;
 };
