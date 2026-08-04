@@ -1,4 +1,5 @@
-import type { PriceHistory, ProductDetail, ProductOffer } from "@channel3/sdk/resources";
+import type { ProductDetail, ProductOffer } from "@channel3/sdk/resources";
+import type { GetPriceHistoryResult } from "@shared/wire";
 import * as React from "react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,7 @@ interface ProductDetailsContextValue {
 	onSelectVariant: ((optionName: string, value: OptionValue) => void) | undefined;
 	onOfferClick: ((offer: ProductOffer) => void) | undefined;
 	buyLinkRel: string | undefined;
-	priceHistory: PriceHistory | undefined;
+	priceHistory: GetPriceHistoryResult | undefined;
 	isResolving: boolean;
 	locale: string | undefined;
 	/** A hovered swatch's value, previewed in the gallery (no fetch). */
@@ -81,7 +82,7 @@ export interface ProductDetailsProps extends Omit<React.ComponentProps<"div">, "
 	/** `rel` for merchant buy links. Use `"sponsored noopener noreferrer"` for affiliate links. */
 	buyLinkRel?: string;
 	/** Optional price-tracking history to render the price section. */
-	priceHistory?: PriceHistory;
+	priceHistory?: GetPriceHistoryResult;
 	/** Dim the variant controls while a re-resolve is in flight. */
 	isResolving?: boolean;
 	/** Locale override for price formatting. */
@@ -241,7 +242,7 @@ function Offers({ className, ...rest }: React.ComponentProps<"div">) {
 	);
 }
 
-function PriceHistorySection({ className, ...rest }: React.ComponentProps<"div">) {
+function PriceHistorySection({ className, children, ...rest }: React.ComponentProps<"div">) {
 	const { priceHistory, locale } = useProductDetails("ProductDetailsPriceHistory");
 	const statistics = priceHistory?.statistics ?? undefined;
 	const history = priceHistory?.history ?? [];
@@ -252,6 +253,7 @@ function PriceHistorySection({ className, ...rest }: React.ComponentProps<"div">
 		<div className={cn("flex flex-col gap-4", className)} {...rest}>
 			<h2 className="text-sm font-medium text-muted-foreground">Price history</h2>
 			{statistics ? <PriceRangeGauge statistics={statistics} locale={locale} /> : null}
+			{children}
 			<p className="text-xs text-muted-foreground">Based on the last 30 days.</p>
 		</div>
 	);

@@ -4,8 +4,8 @@ Search 100M+ products across thousands of retailers, with live prices and affili
 
 - **Transport**: Streamable HTTP (protocol revision `2026-07-28`, stateless)
 - **Endpoint**: `https://mcp.trychannel3.com/`
-- **Tools**: `search_products`, `get_product`
-- **Prompts**: `find-gift`, `price-check`
+- **Tools**: `search_products`, `get_products`
+- **Prompts**: `find-gift`, `price-check`, `find-dupes`
 
 ## Quick Start (Free Tier)
 

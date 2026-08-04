@@ -15,7 +15,6 @@ app.use("/", async (c, next) => {
 	await next();
 });
 
-// "stateless" adapts legacy-protocol clients without sessions; flip to "reject" when clients catch up.
 app.mount("/", (req, env, ctx) =>
 	createMcpHandler((mcpCtx) => createServer(env, mcpCtx.requestInfo ?? req), {
 		route: "/",

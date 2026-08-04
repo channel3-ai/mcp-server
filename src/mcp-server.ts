@@ -2,22 +2,24 @@ import { McpServer } from "@modelcontextprotocol/server";
 
 import pkg from "../package.json";
 import { registerPrompts } from "./prompts";
+import { registerStorefrontResource } from "./storefront";
 import { registerTools } from "./tools/register";
-import type { Bindings, Props } from "./types";
+import type { Bindings, Props, ToolContext } from "./types";
 
-// One server per request: per-request props (API key) close over the tool handlers.
+const DEV_HOSTNAMES = new Set(["localhost", "127.0.0.1"]);
+
 export function createServer(env: Bindings, request: Request) {
+	const url = new URL(request.url);
+	const origin = url.origin;
 	const apiKey = request.headers.get("x-api-key")?.trim();
 	const props: Props = {
 		apiKey: apiKey || env.DEFAULT_CHANNEL3_API_KEY,
 		baseURL: env.CHANNEL3_BASE_URL || undefined,
 		isFreeTier: !apiKey,
+		isDev: DEV_HOSTNAMES.has(url.hostname),
 		clientIP: request.headers.get("cf-connecting-ip") || "unknown",
 		userAgent: request.headers.get("user-agent") || "unknown",
 	};
-
-	// Icons are this Worker's static assets; resolve against the request origin.
-	const origin = new URL(request.url).origin;
 
 	const server = new McpServer(
 		{
@@ -44,8 +46,11 @@ export function createServer(env: Bindings, request: Request) {
 		{
 			instructions:
 				"Channel3 product search. `search_products` finds products from a natural-language " +
-				"query; `get_product` returns full details for one product by ID (from a " +
-				"`search_products` result) or URL.",
+				"query; `get_products` returns full details for one or more products by ID (from a " +
+				"`search_products` result) or URL. Tool results render in an interactive storefront " +
+				"UI that the user can already see: never enumerate products, prices, or specs that " +
+				"are on screen - respond with brief commentary, trade-offs, or a recommendation " +
+				"instead.",
 			cacheHints: {
 				"tools/list": { ttlMs: 86_400_000, cacheScope: "public" },
 				"prompts/list": { ttlMs: 86_400_000, cacheScope: "public" },
@@ -53,7 +58,9 @@ export function createServer(env: Bindings, request: Request) {
 		},
 	);
 
-	registerTools(server, { props, env });
+	const ctx: ToolContext = { props, env, origin };
+	registerTools(server, ctx);
 	registerPrompts(server);
+	registerStorefrontResource(server, ctx);
 	return server;
 }

@@ -34,7 +34,7 @@ export function registerPrompts(server: McpServer) {
 							"offer's buy URL — always link the offer's buy URL, never a guessed " +
 							"retailer page.\n" +
 							"3. If the top pick needs a closer look (variants, materials, more " +
-							"images), call get_product with its id before recommending it.",
+							"images), call get_products with its id before recommending it.",
 					},
 				},
 			],
@@ -62,7 +62,7 @@ export function registerPrompts(server: McpServer) {
 						type: "text",
 						text:
 							`Find the best place to buy ${product_url}. Use the Channel3 tools:\n` +
-							"1. Call get_product with the URL as product_id — it resolves product " +
+							"1. Call get_products with the URL in product_ids — it resolves product " +
 							"pages from any retailer, not just Channel3 links.\n" +
 							"2. Compare the offers: list every retailer with its live price and " +
 							"availability, and call out the cheapest in-stock option with its buy " +
@@ -114,7 +114,7 @@ export function registerPrompts(server: McpServer) {
 							"brand, cheapest in-stock offer (price + retailer), and the offer's " +
 							"buy URL.\n" +
 							"3. Note briefly how close each match is (exact item vs. similar " +
-							"style); call get_product on any exact-looking match to confirm.",
+							"style); call get_products on any exact-looking matches to confirm.",
 					},
 				},
 			],

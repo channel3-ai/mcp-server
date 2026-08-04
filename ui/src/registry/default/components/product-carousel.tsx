@@ -6,6 +6,7 @@ import {
 	CarouselItem,
 	CarouselNext,
 	CarouselPrevious,
+	wheelGesturesPlugin,
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
 import { ProductCard, ProductCardSkeleton } from "@/registry/default/components/product-card";
@@ -66,7 +67,12 @@ export function ProductCarousel({
 	}
 
 	return (
-		<Carousel opts={{ align: "start" }} className={cn("w-full", className)} {...props}>
+		<Carousel
+			opts={{ align: "start" }}
+			plugins={[wheelGesturesPlugin]}
+			className={cn("w-full", className)}
+			{...props}
+		>
 			<div className="mb-3 flex items-center justify-between gap-2">
 				<div className="text-base font-medium">{title}</div>
 				<div className="flex gap-2">
@@ -81,24 +87,20 @@ export function ProductCarousel({
 								<ProductCardSkeleton />
 							</CarouselItem>
 						))
-					: products.map((product, index) => (
-							<CarouselItem key={product.id} className={itemClassName}>
-								<ProductCard
-									product={product}
-									href={getHref?.(product)}
-									onSelect={onSelect}
-									onPreload={onPreload}
-									onSelectVariant={
-										onSelectVariant
-											? (value) => onSelectVariant(product, value)
-											: undefined
-									}
-									showSwatches={showSwatches}
-									priority={index < priorityCount}
-									locale={locale}
-								/>
-							</CarouselItem>
-						))}
+				: products.map((product, index) => (
+						<CarouselItem key={product.id} className={itemClassName}>
+							<ProductCard
+								product={product}
+								href={getHref?.(product)}
+								onSelect={onSelect}
+								onPreload={onPreload}
+								onSelectVariant={onSelectVariant}
+								showSwatches={showSwatches}
+								priority={index < priorityCount}
+								locale={locale}
+							/>
+						</CarouselItem>
+					))}
 			</CarouselContent>
 		</Carousel>
 	);
