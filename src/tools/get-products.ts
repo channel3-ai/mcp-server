@@ -15,10 +15,15 @@ export function registerGetProducts(server: McpServer, ctx: ToolContext) {
 		{
 			title: "Get Products",
 			description:
-				"Fetch full details for one or more products by ID (from a `search_products` " +
-				"result) or URL. Pass several IDs to fetch and compare products in parallel. " +
-				"Details also display in the storefront UI the user can already see - don't " +
-				"restate them verbatim; add commentary or a recommendation.",
+				"Get the full data for one product or more: all offers, the description, the " +
+				"attributes, and the images.\n" +
+				"Use a product ID from a `search_products` result, or a product URL from any " +
+				"retailer. Give several IDs in one call to compare products. The tool fetches " +
+				"them together.\n" +
+				"Do not use this tool to find products. Use `search_products` for that.\n" +
+				"The data shows to the user in the storefront UI. Do not repeat the " +
+				"specifications or the prices in your reply. Give a comment, a comparison, or " +
+				"a recommendation.",
 			inputSchema: GetProductsRequestSchema,
 			outputSchema: GetProductsResultSchema,
 			annotations: READ_ONLY_ANNOTATIONS,
@@ -36,10 +41,10 @@ export function registerGetProducts(server: McpServer, ctx: ToolContext) {
 				{
 					summarize: (r) => {
 						const lines = [
-							`Fetched full details for ${r.products.length} product${r.products.length === 1 ? "" : "s"}, ` +
-								"displayed in the storefront UI the user can already see. Do not restate " +
-								"specs, descriptions, or prices verbatim; add only commentary, comparisons, " +
-								"or a recommendation.",
+							`Found the full data for ${r.products.length} product${r.products.length === 1 ? "" : "s"}.`,
+							"These products show to the user in the storefront. The user can see them.",
+							"Do not repeat the specifications, the descriptions, or the prices.",
+							"Give a comment, a comparison, or a recommendation.",
 							"",
 							...r.products.map(productAnchorLine),
 						];

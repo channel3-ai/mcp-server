@@ -18,11 +18,11 @@ import {
 } from "@/storefront/bridge";
 import { browseQueryOptions } from "@/storefront/browse-query";
 import { BrowseGridSkeleton, BrowseView } from "@/storefront/browse-view";
-import { DetailView } from "@/storefront/detail-view";
+import { type DetailFocus, DetailView } from "@/storefront/detail-view";
 import { InlineError, InlineResults, InlineSearchSkeleton } from "@/storefront/inline-views";
-import { toSyncedProduct } from "@/storefront/model-copy";
+import { type ResultSetPresence, usePresence } from "@/storefront/instance-presence";
+import { buildContextReport, toFocusContext, toSyncedProduct } from "@/storefront/model-copy";
 import type { PendingSearch, SyncedProduct, ViewingContext } from "@/storefront/types";
-import { useLiveInstance } from "@/storefront/use-live-instance";
 
 interface SearchState {
 	products: ProductDetail[];
@@ -331,12 +331,25 @@ function StorefrontCore({
 		() => (hostInstanceId != null ? String(hostInstanceId) : crypto.randomUUID()),
 		[hostInstanceId],
 	);
-	const isLive = useLiveInstance(state.orderKey, instanceId);
 
 	const [loadedProducts, setLoadedProducts] = React.useState<{
 		nonce: number;
 		products: SyncedProduct[];
 	} | null>(null);
+	const [detailFocus, setDetailFocus] = React.useState<{
+		nonce: number;
+		focus: DetailFocus;
+	} | null>(null);
+	const detailNonceForFocus = detail?.nonce;
+	const handleDetailFocus = React.useCallback(
+		(focus: DetailFocus) => {
+			if (detailNonceForFocus === undefined) {
+				return;
+			}
+			setDetailFocus({ nonce: detailNonceForFocus, focus });
+		},
+		[detailNonceForFocus],
+	);
 	const searchNonce = search?.nonce;
 	const handleResultsChange = React.useCallback(
 		(products: ProductDetail[]) => {
@@ -400,32 +413,59 @@ function StorefrontCore({
 		return healSearch(lostResult);
 	}, [lostResult, healSearch]);
 
+	const synced =
+		search && loadedProducts?.nonce === search.nonce
+			? loadedProducts.products
+			: (search?.products.map(toSyncedProduct) ?? []);
+	const focused =
+		scene === "detail" && detail && detailFocus?.nonce === detail.nonce
+			? detailFocus.focus
+			: null;
+	const focusProduct = focused?.product ?? detail?.product;
+	const viewing: ViewingContext | null =
+		scene === "detail" && detail && focusProduct
+			? toFocusContext(focusProduct, {
+					inTranscript: search?.products.some((p) => p.id === focusProduct.id) ?? false,
+					variantTitle:
+						focusProduct.id !== detail.product.id ? focusProduct.title : undefined,
+					priceStats: focused?.priceStats,
+				})
+			: search
+				? {
+						kind: "search",
+						query: search.query,
+						imageUrl: search.imageUrl,
+						products: synced,
+					}
+				: null;
+
+	const initialCount = search?.products.length ?? 0;
+	const resultSet: ResultSetPresence | null = search
+		? {
+				transcriptCount: initialCount,
+				loadedCount: synced.length,
+				delta: synced.slice(initialCount).map((p) => ({ id: p.id, title: p.title })),
+				display: fullscreen ? "fullscreen" : "inline",
+			}
+		: null;
+
+	const presence = usePresence({
+		orderKey: state.orderKey,
+		instanceId,
+		query: search?.query,
+		imageUrl: search?.imageUrl,
+		resultSet,
+		focus: viewing,
+		fullscreen,
+	});
+	const { isPublisher, self, peers } = presence;
+
 	React.useEffect(() => {
-		if (!isLive) {
+		if (!isPublisher || !self) {
 			return;
 		}
-		const synced =
-			search && loadedProducts?.nonce === search.nonce
-				? loadedProducts.products
-				: (search?.products.map(toSyncedProduct) ?? []);
-		const viewing: ViewingContext | null =
-			scene === "detail" && detail
-				? {
-						kind: "product",
-						id: detail.product.id,
-						title: detail.product.title,
-						brand: detail.product.brands?.[0]?.name,
-					}
-				: search
-					? {
-							kind: "search",
-							query: search.query,
-							imageUrl: search.imageUrl,
-							products: synced,
-						}
-					: null;
-		bridge.syncContext({ viewing });
-	}, [bridge, scene, detail, search, loadedProducts, isLive]);
+		bridge.syncContext(buildContextReport(self, peers));
+	}, [bridge, isPublisher, self, peers]);
 
 	const goFullscreen = React.useCallback(async () => {
 		const granted = await bridge.requestFullscreen().catch(() => false);
@@ -502,6 +542,7 @@ function StorefrontCore({
 					bridge={bridge}
 					onSelect={(product) => state.openDetail(product, detail.origin)}
 					onBack={onDetailBack}
+					onFocusChange={handleDetailFocus}
 					locale={locale}
 				/>
 			) : search ? (
