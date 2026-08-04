@@ -5,6 +5,7 @@ export type Props = {
 	baseURL?: string;
 	isFreeTier: boolean;
 	isDev: boolean;
+	isVerifiedHost: boolean;
 	clientIP: string;
 	userAgent: string;
 };
