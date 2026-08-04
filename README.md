@@ -109,7 +109,7 @@ Or use the Inspector CLI for scripted checks:
 ```bash
 pnpm exec mcp-inspector --cli http://localhost:8787/ --transport http --method tools/list
 pnpm exec mcp-inspector --cli http://localhost:8787/ --transport http --method tools/call \
-  --tool-name search_products --tool-arg 'queries=["desk lamp"]'
+  --tool-name search_products --tool-arg query="desk lamp"
 pnpm exec mcp-inspector --cli http://localhost:8787/ --transport http --method prompts/get \
   --prompt-name find-gift --prompt-args recipient="coffee-loving sister" budget=60
 ```

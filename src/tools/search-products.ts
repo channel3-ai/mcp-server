@@ -2,7 +2,7 @@ import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
 
 import { productAnchorLine } from "../channel3/format";
-import { combineSearchQueries, searchProducts } from "../channel3/products";
+import { searchProducts } from "../channel3/products";
 import { SearchProductsResultSchema, SearchRequestSchema } from "../schemas";
 import { asExtAppsServer, STOREFRONT_RESOURCE_URI } from "../storefront";
 import type { ToolContext } from "../types";
@@ -15,9 +15,9 @@ export function registerSearchProducts(server: McpServer, ctx: ToolContext) {
 		{
 			title: "Search Products",
 			description:
-				"Search 100M+ products across thousands of retailers for one shopping request. " +
-				"Put every product type or alternative in the `queries` array. The server combines " +
-				"the array into one search and one storefront.\n" +
+				"Search 100M+ products across thousands of retailers for one product type. " +
+				"Call once for each distinct product type, and send independent calls together. " +
+				"Put relevant constraints in `query`.\n" +
 				"Returns up to 8 product cards plus structured product data.",
 			inputSchema: SearchRequestSchema,
 			outputSchema: SearchProductsResultSchema,
@@ -35,16 +35,17 @@ export function registerSearchProducts(server: McpServer, ctx: ToolContext) {
 				}),
 				{
 					summarize: (r, p) => {
-						const query = combineSearchQueries(p.queries);
-						const what = query
-							? ` for "${query}"`
+						const what = p.query
+							? ` for "${p.query}"`
 							: p.image_url
 								? " for the image"
 								: "";
-						const more = r.next_page_token ? " More results are available." : "";
+						const more = r.next_page_token
+							? " More results are available through Shop all."
+							: "";
 						return [
 							`Found ${r.products.length} products${what}.${more}`,
-							"All results show as cards in the storefront; Shop all loads more.",
+							"The returned products show as cards in the storefront.",
 							"",
 							...r.products.map(productAnchorLine),
 						].join("\n");

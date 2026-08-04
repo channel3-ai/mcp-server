@@ -6,10 +6,10 @@ const ImageUrlSchema = z.string();
 
 const searchCriteria = {
 	query: SearchQuerySchema.optional().describe(
-		"Product type(s) and constraints in natural language " +
+		"One product type and its constraints in natural language " +
 			"(brand, color, material, size, price, gender).\n" +
-			'Good: "red leather jacket under $200"; "leather golf glove or rangefinder under $40".\n' +
-			'Bad: "gift ideas for dad"; "cool sneakers" (name products, not occasions or opinions).',
+			'Good: "red leather jacket under $200"; "leather golf glove under $40".\n' +
+			'Bad: "gift ideas for dad"; "cool sneakers"; "golf glove or rangefinder".',
 	),
 	image_url: ImageUrlSchema.optional().describe(
 		"Public image URL for visual search. Combine with `query` for text + image.",
@@ -17,26 +17,9 @@ const searchCriteria = {
 };
 
 export const SearchRequestSchema = z
-	.object({
-		queries: z
-			.array(
-				SearchQuerySchema.describe(
-					"One concrete product type with its relevant constraints.",
-				),
-			)
-			.min(1)
-			.max(8)
-			.optional()
-			.describe(
-				"All product searches for this user request. Put every product type or " +
-					"alternative in this one array. Use one item for a single-product request.",
-			),
-		image_url: ImageUrlSchema.optional().describe(
-			"Public image URL for visual search. Combine with `queries` for text + image.",
-		),
-	})
-	.refine((data) => Boolean(data.queries?.length || data.image_url), {
-		message: "At least one of `queries` or `image_url` is required.",
+	.object(searchCriteria)
+	.refine((data) => Boolean(data.query || data.image_url), {
+		message: "At least one of `query` or `image_url` is required.",
 	});
 
 export const GetProductsRequestSchema = z.object({

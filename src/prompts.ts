@@ -6,7 +6,7 @@ export function registerPrompts(server: McpServer) {
 		"find-gift",
 		{
 			title: "Find a Gift",
-			description: "Find gift ideas for a person with one product search.",
+			description: "Find gift ideas for a person.",
 			argsSchema: z.object({
 				recipient: z.string().describe("Who the gift is for, e.g. 'my dad who loves golf'"),
 				occasion: z.string().optional().describe("Occasion, e.g. 'birthday'"),
@@ -21,10 +21,8 @@ export function registerPrompts(server: McpServer) {
 			if (budget) {
 				lines.push(`The maximum price is $${budget}.`);
 			}
-			lines.push(
-				"Put all product types in one search_products queries array " +
-					'(example: ["leather golf glove under $40", "rangefinder under $40"]).',
-			);
+			lines.push("Choose two or three concrete product types.");
+			lines.push("Use one search_products call for each product type.");
 			return {
 				messages: [
 					{

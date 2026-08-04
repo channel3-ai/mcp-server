@@ -52,7 +52,7 @@ export function createServer(env: Bindings, request: Request) {
 		{
 			instructions:
 				"Use Channel3 to search products and compare live retailer offers.\n" +
-				"Put all product types for one shopping request in one search_products `queries` array.\n" +
+				"Call search_products separately for each distinct product type.\n" +
 				"Call get_products for full details by product ID or retailer URL.\n" +
 				"Results appear in a storefront UI — comment or recommend; do not re-list what the user can see.\n" +
 				'For deictic references ("this product"), use the storefront model context.',

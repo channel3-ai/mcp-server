@@ -34,18 +34,13 @@ export function findSimilarProductsPage(
 	});
 }
 
-export function combineSearchQueries(queries: readonly string[] | undefined): string | undefined {
-	const normalized = queries?.map((query) => query.trim()).filter(Boolean) ?? [];
-	return normalized.length > 0 ? normalized.join(" or ") : undefined;
-}
-
 export async function searchProducts(
 	apiKey: string,
 	params: z.infer<typeof SearchRequestSchema>,
 	baseURL?: string,
 ): Promise<{ products: ProductSummary[]; next_page_token: string | null }> {
 	const page = await searchProductsPage(createClient(apiKey, baseURL), {
-		query: combineSearchQueries(params.queries),
+		query: params.query,
 		image_url: params.image_url,
 		limit: 8,
 	});
