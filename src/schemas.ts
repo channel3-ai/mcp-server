@@ -6,19 +6,25 @@ const searchCriteria = {
 		.string()
 		.optional()
 		.describe(
-			"One specific product, described concretely: item type plus attributes, e.g. " +
-				"'self-stirring coffee mug' or 'red leather jacket under $200'. This is " +
-				"semantic (meaning-based) search, not keyword matching - synonym lists and " +
-				"generic category words like 'good birthday gifts' dilute the " +
-				"embedding and return generic results. One concrete idea per call; run " +
-				"separate searches for separate ideas. Constraints (brand, retailer, " +
-				"color, size, price range, gender) go inline in the description.",
+			"One product with its objective attributes, as a retailer prints them on the " +
+				"product page. This tool has no filter parameters. Put every constraint in " +
+				"this text: brand, retailer, color, material, size, price, gender.\n" +
+				'Correct: "red leather jacket under $200"\n' +
+				'Correct: "low-top off-white suede sneakers"\n' +
+				'Correct: "leather golf glove under $40"\n' +
+				'Wrong: "cool sneakers"\n' +
+				'Wrong: "good birthday gifts for dad"\n' +
+				'Do not write an opinion word, for example "cool", "stylish", or "best". ' +
+				"The search engine matches an opinion word to the names of products. The " +
+				'query "cool sneakers" returns a shoe line with the name "Cool". Write the ' +
+				"attributes that cause the opinion.",
 		),
 	image_url: z
 		.string()
 		.optional()
 		.describe(
-			"Public image URL for visual search. Combine with `query` for text+image search.",
+			"A public URL of an image. The tool finds products that look like the image. " +
+				"Add `query` to search with text and the image together.",
 		),
 };
 

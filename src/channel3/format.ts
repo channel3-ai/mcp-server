@@ -11,9 +11,13 @@ function cdnImages<T extends { url: string }>(images: T[] | undefined): T[] | un
 	return images?.filter(isCdnImage);
 }
 
-function mainImage(product: ProductDetail) {
+function summaryImage(product: ProductDetail) {
 	const images = cdnImages(product.images);
-	return images?.find((i) => i.is_main_image) ?? images?.[0];
+	return (
+		images?.find((i) => i.is_cleaned_image) ??
+		images?.find((i) => i.is_main_image) ??
+		images?.[0]
+	);
 }
 
 export function formatOffer(offer: ProductOffer) {
@@ -26,7 +30,7 @@ export function formatOffers(offers: ProductOffer[] | undefined) {
 }
 
 export function formatProductSummary(product: ProductDetail) {
-	const image = mainImage(product);
+	const image = summaryImage(product);
 	return {
 		id: product.id,
 		title: product.title,
@@ -37,7 +41,7 @@ export function formatProductSummary(product: ProductDetail) {
 		images: image ? [image] : [],
 		structured_attributes: product.structured_attributes,
 		offers: formatOffers(product.offers),
-		description: product.description?.slice(0, 280),
+		description: product.description ?? undefined,
 	};
 }
 
@@ -50,7 +54,7 @@ export function formatProductDetail(product: ProductDetail): ProductDetail {
 	return {
 		...stripped,
 		images: stripped.images?.slice(0, 5),
-		description: product.description?.slice(0, 500),
+		description: product.description,
 	};
 }
 
@@ -66,9 +70,9 @@ type AnchorProduct = {
 export function productAnchorLine(product: AnchorProduct): string {
 	const best = leadOffer(product.offers);
 	const parts = [`"${product.title}"`];
-	const brand = product.brands?.[0]?.name;
-	if (brand) {
-		parts.push(brand);
+	const brands = (product.brands ?? []).map((b) => b.name).join(", ");
+	if (brands) {
+		parts.push(brands);
 	}
 	if (best) {
 		parts.push(`${formatCurrency(best.price.price, best.price.currency)} at ${best.domain}`);

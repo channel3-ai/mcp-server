@@ -51,12 +51,13 @@ export function createServer(env: Bindings, request: Request) {
 		},
 		{
 			instructions:
-				"Channel3 product search. `search_products` finds products from a natural-language " +
-				"query; `get_products` returns full details for one or more products by ID (from a " +
-				"`search_products` result) or URL. Tool results render in an interactive storefront " +
-				"UI that the user can already see: never enumerate products, prices, or specs that " +
-				"are on screen - respond with brief commentary, trade-offs, or a recommendation " +
-				"instead.",
+				"Channel3 searches for products from thousands of retailers.\n" +
+				"`search_products` finds products from a description in natural language.\n" +
+				"`get_products` returns the full data for a product. Use an ID from a " +
+				"`search_products` result, or a product URL from any retailer.\n" +
+				"The results show to the user in a storefront UI. Do not list the products, " +
+				"the prices, or the specifications that the user can see. Give a short " +
+				"comment, a trade-off, or a recommendation.",
 			cacheHints: {
 				"tools/list": { ttlMs: 86_400_000, cacheScope: "public" },
 				"prompts/list": { ttlMs: 86_400_000, cacheScope: "public" },

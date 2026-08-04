@@ -2,9 +2,6 @@ import type { ProductDetail } from "@channel3/sdk/resources";
 import type { App } from "@modelcontextprotocol/ext-apps/react";
 import type { GetDetailsResult, GetPriceHistoryResult, ProductsPageResult } from "@shared/wire";
 
-import { contextMarkdown } from "@/storefront/model-copy";
-import type { ModelContextSync } from "@/storefront/types";
-
 export interface BrowseInput {
 	query?: string;
 	imageUrl?: string;
@@ -24,7 +21,7 @@ export interface StorefrontBridge {
 	openLink(url: string): Promise<void>;
 	requestFullscreen(): Promise<boolean>;
 	requestInline(): Promise<void>;
-	syncContext(context: ModelContextSync): void;
+	syncContext(text: string): void;
 }
 
 type ToolResult = Awaited<ReturnType<App["callServerTool"]>>;
@@ -108,7 +105,7 @@ export class AppBridge implements StorefrontBridge {
 		await this.app.requestDisplayMode({ mode: "inline" });
 	}
 
-	syncContext(context: ModelContextSync): void {
+	syncContext(text: string): void {
 		const capabilities = this.app.getHostCapabilities()?.updateModelContext;
 		if (!capabilities) {
 			if (!this.warnedNoModelContext) {
@@ -119,20 +116,12 @@ export class AppBridge implements StorefrontBridge {
 			}
 			return;
 		}
-		const text = contextMarkdown(context);
-		const structured = capabilities.structuredContent
-			? { viewing: context.viewing }
-			: undefined;
-		const payload = JSON.stringify({ text, structured });
-		if (payload === this.lastContextPayload) {
+		if (text === this.lastContextPayload) {
 			return;
 		}
-		this.lastContextPayload = payload;
+		this.lastContextPayload = text;
 		this.app
-			.updateModelContext({
-				content: [{ type: "text", text }],
-				structuredContent: structured,
-			})
+			.updateModelContext({ content: [{ type: "text", text }] })
 			.catch((error: unknown) => {
 				this.lastContextPayload = null;
 				console.error("model context sync failed", error);

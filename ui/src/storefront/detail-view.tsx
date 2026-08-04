@@ -21,18 +21,26 @@ import {
 import type { VariantResolver } from "@/registry/default/hooks/use-variant-selection";
 import { useVariantSelection } from "@/registry/default/hooks/use-variant-selection";
 import type { StorefrontBridge } from "@/storefront/bridge";
+import type { PriceFocusStats } from "@/storefront/types";
+
+export interface DetailFocus {
+	product: ProductDetail;
+	priceStats?: PriceFocusStats;
+}
 
 export function DetailView({
 	product: initialProduct,
 	bridge,
 	onSelect,
 	onBack,
+	onFocusChange,
 	locale,
 }: {
 	product: ProductDetail;
 	bridge: StorefrontBridge;
 	onSelect: (product: ProductDetail) => void;
 	onBack?: () => void;
+	onFocusChange?: (focus: DetailFocus) => void;
 	locale?: string;
 }) {
 	const queryClient = useQueryClient();
@@ -67,6 +75,23 @@ export function DetailView({
 		product: base,
 		resolve: resolveVariant,
 	});
+
+	const stats = priceHistoryQuery.data?.statistics;
+	React.useEffect(() => {
+		onFocusChange?.({
+			product,
+			priceStats: stats
+				? {
+						currency: stats.currency,
+						currentPrice: stats.current_price,
+						minPrice: stats.min_price,
+						maxPrice: stats.max_price,
+						mean: stats.mean,
+						status: stats.current_status,
+					}
+				: undefined,
+		});
+	}, [product, stats, onFocusChange]);
 
 	const fetchSimilar = React.useCallback(
 		({ productId, limit }: { productId: string; limit: number }) =>
