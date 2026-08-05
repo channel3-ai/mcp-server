@@ -15,7 +15,8 @@
 		"html_handling": "none"
 	},
 	"vars": {
-		"CHANNEL3_BASE_URL": ""
+		"CHANNEL3_BASE_URL": "",
+		"POSTHOG_HOST": "https://us.i.posthog.com"
 	},
 	"migrations": [
 		{

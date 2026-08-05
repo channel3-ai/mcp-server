@@ -1,3 +1,5 @@
+import type { Analytics } from "./analytics/posthog";
+
 export type Bindings = Env;
 
 export type Props = {
@@ -12,4 +14,5 @@ export type ToolContext = {
 	props: Props;
 	env: Bindings;
 	origin: string;
+	analytics: Analytics;
 };
