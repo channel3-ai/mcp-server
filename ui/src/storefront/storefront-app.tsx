@@ -8,8 +8,10 @@ import {
 } from "@modelcontextprotocol/ext-apps/react";
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { type MountResult, MountResultSchema, SearchCriteriaSchema } from "@shared/wire";
+import { Bookmark } from "lucide-react";
 import * as React from "react";
 
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
 	AppBridge,
@@ -20,10 +22,13 @@ import {
 import { browseQueryOptions } from "@/storefront/browse-query";
 import { BrowseGridSkeleton, BrowseView } from "@/storefront/browse-view";
 import { type DetailFocus, DetailView } from "@/storefront/detail-view";
+import { detailQueryOptions } from "@/storefront/detail-query";
 import { InlineError, InlineResults, InlineSearchSkeleton } from "@/storefront/inline-views";
 import { type ResultSetPresence, usePresence } from "@/storefront/instance-presence";
 import { buildContextReport, toFocusContext, toSyncedProduct } from "@/storefront/model-copy";
+import { SavedTray } from "@/storefront/saved-tray";
 import type { OrderKey, PendingSearch, SyncedProduct, ViewingContext } from "@/storefront/types";
+import { useSavedProducts } from "@/storefront/use-saved-products";
 
 interface SearchState {
 	key: string;
@@ -349,6 +354,9 @@ function StorefrontCore({
 	const fullscreen = displayMode === "fullscreen";
 	const [expandedInline, setExpandedInline] = React.useState(false);
 
+	const [savedOpen, setSavedOpen] = React.useState(false);
+	const saved = useSavedProducts(bridge, savedOpen);
+
 	const [settlingInline, setSettlingInline] = React.useState(false);
 	const wasFullscreen = React.useRef(fullscreen);
 	React.useEffect(() => {
@@ -509,6 +517,7 @@ function StorefrontCore({
 		resultSets,
 		focus: viewing,
 		fullscreen,
+		saved: saved.syncedSaved,
 	});
 	const { isPublisher, self, peers } = presence;
 
@@ -534,6 +543,17 @@ function StorefrontCore({
 		}
 	}, [bridge, fullscreen, state]);
 
+	const compareSaved = React.useCallback(() => {
+		const ids = saved.syncedSaved.map((p) => p.id);
+		bridge
+			.sendChatMessage(
+				`Compare the products I saved: ${ids.join(", ")} - call get_products with these IDs and give me a personalized comparison between them.`,
+			)
+			.catch((error: unknown) => {
+				console.warn("compare message failed to send", error);
+			});
+	}, [bridge, saved.syncedSaved]);
+
 	const openDetailFromInline = React.useCallback(
 		(product: ProductDetail, sourceKey: string) => {
 			state.activate(sourceKey);
@@ -556,10 +576,7 @@ function StorefrontCore({
 
 	const prefetchProduct = React.useCallback(
 		(product: ProductDetail) => {
-			void queryClient.prefetchQuery({
-				queryKey: ["details", product.id],
-				queryFn: () => bridge.getProduct(product.id),
-			});
+			void queryClient.prefetchQuery(detailQueryOptions(bridge, product.id));
 		},
 		[bridge, queryClient],
 	);
@@ -570,7 +587,7 @@ function StorefrontCore({
 			className={cn(
 				"@container min-w-0",
 				fullscreen
-					? "h-full overflow-y-auto pb-(--inset-bottom) scroll-pb-(--inset-bottom)"
+					? "h-full overflow-y-auto pb-(--inset-bottom) scroll-pb-(--inset-bottom) scrollbar-hidden"
 					: "min-h-full",
 			)}
 		>
@@ -602,6 +619,7 @@ function StorefrontCore({
 					key={detail.nonce}
 					product={detail.product}
 					bridge={bridge}
+					saved={saved}
 					onSelect={(product) => state.openDetail(product, detail.origin)}
 					onBack={onDetailBack}
 					onFocusChange={handleDetailFocus}
@@ -611,6 +629,7 @@ function StorefrontCore({
 				<BrowseView
 					key={search.nonce}
 					bridge={bridge}
+					saved={saved}
 					initialQuery={search.query}
 					initialImageUrl={search.imageUrl}
 					initialResults={search.products}
@@ -630,7 +649,31 @@ function StorefrontCore({
 					caption={pending?.query ? `Searching for “${pending.query}”…` : pending?.label}
 				/>
 			);
-		body = wideLayout(sceneBody);
+		const detailVisible = scene === "detail" && detail != null;
+		const trayCoversMobile = savedOpen && !detailVisible;
+		const pdpCoversMobile = savedOpen && detailVisible;
+		body = (
+			<div className={cn("flex w-full", fullscreen && "h-full min-h-0")}>
+				<div
+					className={cn(
+						"h-full min-w-0 flex-1",
+						trayCoversMobile ? "hidden sm:block" : "block",
+					)}
+				>
+					{wideLayout(sceneBody)}
+				</div>
+				{savedOpen || fullscreen ? (
+					<SavedTray
+						saved={saved}
+						open={savedOpen}
+						onSelect={(product) => state.openDetail(product, "search")}
+						onCompare={compareSaved}
+						onClose={() => setSavedOpen(false)}
+						className={pdpCoversMobile ? "hidden sm:block" : "block"}
+					/>
+				) : null}
+			</div>
+		);
 	} else if (settlingInline) {
 		body = <InlineSearchSkeleton />;
 	} else if (searches.length > 0) {
@@ -640,9 +683,14 @@ function StorefrontCore({
 					<InlineResults
 						key={set.key}
 						products={set.products}
+						saved={saved}
 						onSelect={(product) => openDetailFromInline(product, set.key)}
 						onPrefetchProduct={prefetchProduct}
 						onBrowseAll={() => browseAll(set.key)}
+						onShowSaved={() => {
+							browseAll(set.key);
+							setSavedOpen(true);
+						}}
 						locale={locale}
 					/>
 				))}
@@ -659,7 +707,7 @@ function StorefrontCore({
 	return (
 		<div
 			className={cn(
-				"text-foreground",
+				"relative text-foreground",
 				fullscreen ? "h-svh overflow-hidden" : "min-h-full",
 				(fullscreen || expandedInline) && "bg-background",
 				fullscreen && "fullscreen",
@@ -676,6 +724,27 @@ function StorefrontCore({
 			}
 		>
 			{body}
+			{(fullscreen || expandedInline) && !savedOpen ? (
+				<Button
+					onClick={() => setSavedOpen(true)}
+					aria-label={
+						saved.count > 0
+							? `Open saved products (${saved.count})`
+							: "Open saved products"
+					}
+					className={cn(
+						"absolute right-6 z-20 size-12 rounded-full shadow-lg",
+						fullscreen ? "top-6" : "top-16",
+					)}
+				>
+					<Bookmark className="size-5" />
+					{saved.count > 0 ? (
+						<span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary font-medium text-primary-foreground text-[10px] tabular-nums">
+							{saved.count}
+						</span>
+					) : null}
+				</Button>
+			) : null}
 		</div>
 	);
 }

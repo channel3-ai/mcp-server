@@ -1,10 +1,26 @@
 import { BroadcastChannel as ElectionChannel, createLeaderElection } from "broadcast-channel";
 import * as React from "react";
 
-import type { OrderKey, ViewingContext } from "@/storefront/types";
+import type { OrderKey, SyncedProduct, ViewingContext } from "@/storefront/types";
 
-const PRESENCE_CHANNEL = "channel3-storefront-presence";
-const ELECTION_CHANNEL = "channel3-storefront-election";
+const SCOPE_STORAGE_KEY = "channel3-storefront:presence-scope";
+
+// ui.domain makes the origin span conversations; a per-tab key (sessionStorage) keeps presence inside one chat.
+function presenceScope(): string {
+	try {
+		const existing = sessionStorage.getItem(SCOPE_STORAGE_KEY);
+		if (existing) return existing;
+		const created = crypto.randomUUID();
+		sessionStorage.setItem(SCOPE_STORAGE_KEY, created);
+		return created;
+	} catch {
+		return "default";
+	}
+}
+
+const SCOPE = presenceScope();
+const PRESENCE_CHANNEL = `channel3-storefront-presence:${SCOPE}`;
+const ELECTION_CHANNEL = `channel3-storefront-election:${SCOPE}`;
 const ACTIVATION_BROADCAST_INTERVAL_MS = 250;
 const HEARTBEAT_INTERVAL_MS = 2000;
 const PEER_TTL_MS = 5000;
@@ -27,6 +43,7 @@ export interface PresenceRecord {
 	activatedAt: number | null;
 	resultSets: ResultSetPresence[];
 	focus: ViewingContext | null;
+	saved: SyncedProduct[];
 }
 
 interface PresenceMessage {
@@ -48,17 +65,18 @@ export interface PresenceInput {
 	resultSets: ResultSetPresence[];
 	focus: ViewingContext | null;
 	fullscreen: boolean;
+	saved: SyncedProduct[];
 }
 
 export function usePresence(input: PresenceInput): PresenceState {
-	const { orderKey, instanceId, resultSets, focus, fullscreen } = input;
+	const { orderKey, instanceId, resultSets, focus, fullscreen, saved } = input;
 	const [isPublisher, setIsPublisher] = React.useState(false);
 	const [peers, setPeers] = React.useState<PresenceRecord[]>([]);
 	const [selfState, setSelfState] = React.useState<PresenceRecord | null>(null);
 	const activatedAtRef = React.useRef<number | null>(null);
 
-	const latestRef = React.useRef({ orderKey, resultSets, focus, fullscreen });
-	latestRef.current = { orderKey, resultSets, focus, fullscreen };
+	const latestRef = React.useRef({ orderKey, resultSets, focus, fullscreen, saved });
+	latestRef.current = { orderKey, resultSets, focus, fullscreen, saved };
 
 	const peersRef = React.useRef(new Map<string, { presence: PresenceRecord; seenAt: number }>());
 	const announceRef = React.useRef<(() => void) | null>(null);
@@ -72,6 +90,7 @@ export function usePresence(input: PresenceInput): PresenceState {
 			activatedAt: activatedAtRef.current,
 			resultSets: latest.resultSets,
 			focus: latest.focus,
+			saved: latest.saved,
 		};
 	}, [instanceId]);
 
@@ -206,7 +225,7 @@ export function usePresence(input: PresenceInput): PresenceState {
 	// Presence data (focus, loaded pages) must reach siblings and the publisher as soon as
 	// it changes, not on the next heartbeat — otherwise a freshly opened PDP is invisible
 	// for up to HEARTBEAT_INTERVAL_MS.
-	const serialized = JSON.stringify({ orderKey, resultSets, focus });
+	const serialized = JSON.stringify({ orderKey, resultSets, focus, saved });
 	React.useEffect(() => {
 		if (lastAnnouncedRef.current === serialized) {
 			return;

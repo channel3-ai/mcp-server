@@ -24,7 +24,19 @@ const STOREFRONT_UI_META = {
 	},
 };
 
-export function registerStorefrontResource(server: McpServer) {
+// Claude validates ui.domain against a SHA-256 of the connector URL, so the value must be derived per deployment (production vs tunnel), not hardcoded.
+async function claudeSandboxDomain(connectorUrl: string): Promise<string> {
+	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(connectorUrl));
+	const hex = Array.from(new Uint8Array(digest), (byte) =>
+		byte.toString(16).padStart(2, "0"),
+	).join("");
+	return `${hex.slice(0, 32)}.claudemcpcontent.com`;
+}
+
+export async function registerStorefrontResource(server: McpServer, connectorUrl: string) {
+	const meta = {
+		ui: { ...STOREFRONT_UI_META.ui, domain: await claudeSandboxDomain(connectorUrl) },
+	};
 	registerAppResource(
 		asExtAppsServer(server),
 		"Channel3 Storefront",
@@ -32,7 +44,7 @@ export function registerStorefrontResource(server: McpServer) {
 		{
 			title: "Channel3 Storefront",
 			description: "Interactive storefront for browsing Channel3 products.",
-			_meta: STOREFRONT_UI_META,
+			_meta: meta,
 		},
 		() => ({
 			contents: [
@@ -40,7 +52,7 @@ export function registerStorefrontResource(server: McpServer) {
 					uri: STOREFRONT_RESOURCE_URI,
 					mimeType: RESOURCE_MIME_TYPE,
 					text: storefrontHtml,
-					_meta: STOREFRONT_UI_META,
+					_meta: meta,
 				},
 			],
 		}),
