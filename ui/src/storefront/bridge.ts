@@ -1,6 +1,14 @@
 import type { ProductDetail } from "@channel3/sdk/resources";
 import type { App } from "@modelcontextprotocol/ext-apps/react";
-import type { GetDetailsResult, GetPriceHistoryResult, ProductsPageResult } from "@shared/wire";
+import {
+	type GetDetailsResult,
+	GetDetailsResultSchema,
+	type GetPriceHistoryResult,
+	GetPriceHistoryResultSchema,
+	type ProductsPageResult,
+	ProductsPageResultSchema,
+} from "@shared/wire";
+import type { z } from "zod";
 
 export interface BrowseInput {
 	query?: string;
@@ -31,14 +39,15 @@ export function toolErrorText(content: readonly { type: string }[] | undefined):
 	return block && "text" in block && typeof block.text === "string" ? block.text : null;
 }
 
-function structuredContent<T>(result: ToolResult, tool: string): T {
+function structuredContent<T>(result: ToolResult, tool: string, schema: z.ZodType): T {
 	if (result.isError) {
 		throw new Error(`${tool} failed: ${toolErrorText(result.content) ?? "unknown error"}`);
 	}
-	if (!result.structuredContent) {
-		throw new Error(`${tool} returned no structured content`);
+	const parsed = schema.safeParse(result.structuredContent);
+	if (!parsed.success) {
+		throw new Error(`${tool} returned an unexpected result: ${parsed.error.message}`);
 	}
-	return result.structuredContent as T;
+	return parsed.data as T;
 }
 
 export class AppBridge implements StorefrontBridge {
@@ -56,7 +65,11 @@ export class AppBridge implements StorefrontBridge {
 				page_token: input.pageToken,
 			},
 		});
-		const page = structuredContent<ProductsPageResult>(result, "browse_products");
+		const page = structuredContent<ProductsPageResult>(
+			result,
+			"browse_products",
+			ProductsPageResultSchema,
+		);
 		return { products: page.products, nextPageToken: page.next_page_token };
 	}
 
@@ -65,7 +78,11 @@ export class AppBridge implements StorefrontBridge {
 			name: "get_similar",
 			arguments: { product_id: productId, limit },
 		});
-		return structuredContent<ProductsPageResult>(result, "get_similar").products;
+		return structuredContent<ProductsPageResult>(
+			result,
+			"get_similar",
+			ProductsPageResultSchema,
+		).products;
 	}
 
 	async getProduct(productId: string): Promise<ProductDetail> {
@@ -73,7 +90,8 @@ export class AppBridge implements StorefrontBridge {
 			name: "get_details",
 			arguments: { product_id: productId },
 		});
-		return structuredContent<GetDetailsResult>(result, "get_details").product;
+		return structuredContent<GetDetailsResult>(result, "get_details", GetDetailsResultSchema)
+			.product;
 	}
 
 	async getPriceHistory(productId: string): Promise<GetPriceHistoryResult> {
@@ -81,7 +99,11 @@ export class AppBridge implements StorefrontBridge {
 			name: "get_price_history",
 			arguments: { product_id: productId },
 		});
-		return structuredContent<GetPriceHistoryResult>(result, "get_price_history");
+		return structuredContent<GetPriceHistoryResult>(
+			result,
+			"get_price_history",
+			GetPriceHistoryResultSchema,
+		);
 	}
 
 	async openLink(url: string): Promise<void> {

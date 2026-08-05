@@ -7,6 +7,7 @@ import {
 	useHostStyles,
 } from "@modelcontextprotocol/ext-apps/react";
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
+import { type MountResult, MountResultSchema, SearchCriteriaSchema } from "@shared/wire";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
@@ -180,9 +181,12 @@ function sceneReducer(state: ModelDrivenScene, action: ModelAction): ModelDriven
 	}
 }
 
-function readSearchCriteria(source: Record<string, unknown> | undefined): PendingSearch | null {
-	const query = typeof source?.query === "string" ? source.query : undefined;
-	const imageUrl = typeof source?.image_url === "string" ? source.image_url : undefined;
+function readSearchCriteria(source: unknown): PendingSearch | null {
+	const parsed = SearchCriteriaSchema.safeParse(source);
+	if (!parsed.success) {
+		return null;
+	}
+	const { query, image_url: imageUrl } = parsed.data;
 	return query || imageUrl ? { query, imageUrl } : null;
 }
 
@@ -227,12 +231,12 @@ function useModelDrivenState() {
 			});
 			return;
 		}
-		const sc = params.structuredContent as Record<string, unknown> | undefined;
 		// A host can deliver concurrent tool results to one instance, and the bridge
 		// identifies neither, so only the echoed criteria pair a result to its search.
-		const input = readSearchCriteria(sc) ?? pendingRef.current;
+		const input = readSearchCriteria(params.structuredContent) ?? pendingRef.current;
 		pendingRef.current = null;
-		if (!sc || !Array.isArray(sc.products)) {
+		const parsed = MountResultSchema.safeParse(params.structuredContent);
+		if (!parsed.success) {
 			if (input && (input.query || input.imageUrl)) {
 				dispatch({ type: "resultLost", input });
 			} else if (input) {
@@ -240,16 +244,15 @@ function useModelDrivenState() {
 			}
 			return;
 		}
-		if (typeof sc.as_of === "string") {
-			const ms = Date.parse(sc.as_of);
-			if (Number.isFinite(ms)) {
-				setOrderKey(ms);
-			}
+		const result = parsed.data as MountResult;
+		const asOf = result.as_of ? Date.parse(result.as_of) : Number.NaN;
+		if (Number.isFinite(asOf)) {
+			setOrderKey(asOf);
 		}
 		dispatch({
 			type: "result",
-			products: sc.products as ProductDetail[],
-			nextPageToken: typeof sc.next_page_token === "string" ? sc.next_page_token : null,
+			products: result.products,
+			nextPageToken: result.next_page_token ?? null,
 			input,
 		});
 	}, []);
