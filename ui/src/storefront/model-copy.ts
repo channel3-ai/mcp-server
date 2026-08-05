@@ -2,6 +2,7 @@ import type { ProductDetail } from "@channel3/sdk/resources";
 import { formatCurrency, leadOffer } from "@shared/format";
 
 import type { PresenceRecord, ResultSetPresence } from "@/storefront/instance-presence";
+import { compareOrderKeys } from "@/storefront/types";
 import type {
 	OfferFocusSummary,
 	PriceFocusStats,
@@ -152,7 +153,7 @@ export function buildContextReport(self: PresenceRecord, peers: PresenceRecord[]
 	const all = [self, ...peers].filter((r) => r.resultSets.length > 0 || r.focus);
 	const byRecency = [...all].sort(
 		(a, b) =>
-			(b.activatedAt ?? 0) - (a.activatedAt ?? 0) || (b.orderKey ?? 0) - (a.orderKey ?? 0),
+			(b.activatedAt ?? 0) - (a.activatedAt ?? 0) || compareOrderKeys(b.orderKey, a.orderKey),
 	);
 	const shown = byRecency.flatMap((record) => record.resultSets).slice(0, MAX_RESULT_SETS);
 

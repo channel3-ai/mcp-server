@@ -41,6 +41,15 @@ export type ViewingContext =
 	  }
 	| { kind: "search"; query?: string; imageUrl?: string; products: SyncedProduct[] };
 
+export interface OrderKey {
+	asOf: number;
+	seq: number;
+}
+
+export function compareOrderKeys(a: OrderKey | null, b: OrderKey | null): number {
+	return (a?.asOf ?? 0) - (b?.asOf ?? 0) || (a?.seq ?? 0) - (b?.seq ?? 0);
+}
+
 export interface PendingSearch {
 	query?: string;
 	imageUrl?: string;

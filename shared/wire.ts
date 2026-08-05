@@ -27,15 +27,8 @@ export const ProductSummarySchema = z.looseObject({
 	id: z.string(),
 	title: z.string(),
 	brands: z.array(z.looseObject({ id: z.string(), name: z.string() })).optional(),
-	category: z
-		.looseObject({ slug: z.string(), title: z.string(), has_children: z.boolean() })
-		.nullish(),
-	gender: z.enum(["male", "female", "unisex"]).nullish(),
-	age: z.enum(["newborn", "infant", "toddler", "kids", "adult"]).nullish(),
 	images: z.array(z.looseObject({ url: z.string() })).optional(),
-	structured_attributes: z.record(z.string(), z.array(z.string())).optional(),
 	offers: z.array(ProductOfferSchema).optional(),
-	description: z.string().nullish(),
 });
 
 // The SDK owns the product shape, so results validate the two fields every consumer
@@ -77,6 +70,8 @@ const searchCriteria = {
 
 export const SearchCriteriaSchema = z.object(searchCriteria);
 
+const seqSchema = { seq: z.number().int().optional() };
+
 export const SearchProductsResultSchema = z.object({
 	...searchCriteria,
 	products: z.array(ProductSummarySchema),
@@ -85,6 +80,7 @@ export const SearchProductsResultSchema = z.object({
 		.nullable()
 		.describe("Opaque pagination token used by the storefront UI; not usable via this tool."),
 	as_of: AsOfSchema,
+	...seqSchema,
 });
 
 export const GetProductsResultSchema = z.object({
@@ -114,6 +110,7 @@ export const MountResultSchema = z.object({
 	products: z.array(ProductSchema),
 	next_page_token: z.string().nullable().optional(),
 	as_of: z.string().optional(),
+	...seqSchema,
 });
 
 export type ProductsPageResult = { products: ProductDetail[]; next_page_token: string | null };

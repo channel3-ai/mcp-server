@@ -1,8 +1,8 @@
 {
 	"$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-	"name": "io.github.channel3-ai/mcp-server",
-	"title": "Channel3",
-	"description": "Search 100M+ products across thousands of retailers, with live prices and affiliate-aware buy URLs.",
+	"name": "com.trychannel3/shopping",
+	"title": "Channel3 Shopping",
+	"description": "Shopping search across 100M+ products, with every retailer's offer and live price in one place.",
 	"version": "4.0.0",
 	"websiteUrl": "https://trychannel3.com",
 	"icons": [

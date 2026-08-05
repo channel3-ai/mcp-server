@@ -1,7 +1,7 @@
 import { BroadcastChannel as ElectionChannel, createLeaderElection } from "broadcast-channel";
 import * as React from "react";
 
-import type { ViewingContext } from "@/storefront/types";
+import type { OrderKey, ViewingContext } from "@/storefront/types";
 
 const PRESENCE_CHANNEL = "channel3-storefront-presence";
 const ELECTION_CHANNEL = "channel3-storefront-election";
@@ -20,7 +20,7 @@ export interface ResultSetPresence {
 }
 
 export interface PresenceRecord {
-	orderKey: number | null;
+	orderKey: OrderKey | null;
 	instanceId: string;
 	// Sibling instances share a sandbox origin and therefore a clock, so this
 	// compares across instances even when their order keys don't.
@@ -43,7 +43,7 @@ export interface PresenceState {
 }
 
 export interface PresenceInput {
-	orderKey: number | null;
+	orderKey: OrderKey | null;
 	instanceId: string;
 	resultSets: ResultSetPresence[];
 	focus: ViewingContext | null;
