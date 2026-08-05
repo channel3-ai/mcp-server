@@ -1,5 +1,7 @@
 # Publishes server.json to the Official MCP Registry on each version tag.
-# GitHub OIDC auto-grants the io.github.channel3-ai/* namespace — no secrets needed.
+# Authenticates via DNS proof of trychannel3.com ownership (com.trychannel3/*
+# namespace). The Ed25519 private key lives in the MCP_REGISTRY_PRIVATE_KEY
+# secret; the matching public key is a DNS TXT record on trychannel3.com.
 
 name: Publish to MCP Registry
 
@@ -12,7 +14,6 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
       contents: read
     steps:
       - name: Checkout code
@@ -28,8 +29,10 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/v}
           jq --arg v "$VERSION" '.version = $v' server.json > server.tmp && mv server.tmp server.json
 
-      - name: Authenticate to MCP Registry (GitHub OIDC)
-        run: ./mcp-publisher login github-oidc
+      - name: Authenticate to MCP Registry (DNS)
+        env:
+          MCP_REGISTRY_PRIVATE_KEY: ${{ secrets.MCP_REGISTRY_PRIVATE_KEY }}
+        run: ./mcp-publisher login dns --domain trychannel3.com --private-key "$MCP_REGISTRY_PRIVATE_KEY"
 
       - name: Publish server to MCP Registry
         run: ./mcp-publisher publish

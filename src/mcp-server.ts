@@ -31,10 +31,10 @@ export function createServer(env: Bindings, request: Request) {
 		{
 			name: "Channel3",
 			version: pkg.version,
-			title: "Channel3",
+			title: "Channel3 Shopping",
 			description:
-				"Search 100M+ products across thousands of retailers, with live prices " +
-				"and affiliate-aware buy URLs.",
+				"Shopping search across 100M+ products, with every retailer's " +
+				"offer and live price in one place.",
 			websiteUrl: "https://trychannel3.com",
 			icons: [
 				{
