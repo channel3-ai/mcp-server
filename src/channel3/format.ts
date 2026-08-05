@@ -35,13 +35,8 @@ export function formatProductSummary(product: ProductDetail) {
 		id: product.id,
 		title: product.title,
 		brands: product.brands,
-		category: product.category,
-		gender: product.gender,
-		age: product.age,
 		images: image ? [image] : [],
-		structured_attributes: product.structured_attributes,
 		offers: formatOffers(product.offers),
-		description: product.description ?? undefined,
 	};
 }
 

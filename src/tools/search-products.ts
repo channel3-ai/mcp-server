@@ -9,6 +9,8 @@ import { asExtAppsServer, STOREFRONT_RESOURCE_URI } from "../storefront";
 import type { ToolContext } from "../types";
 import { READ_ONLY_ANNOTATIONS, runTool } from "./helpers";
 
+let searchSeq = 0;
+
 export function registerSearchProducts(server: McpServer, ctx: ToolContext) {
 	registerAppTool(
 		asExtAppsServer(server),
@@ -35,6 +37,7 @@ export function registerSearchProducts(server: McpServer, ctx: ToolContext) {
 					image_url: p.image_url,
 					...(await searchProducts(ctx.props.apiKey, p, ctx.props.baseURL)),
 					as_of: new Date().toISOString(),
+					seq: ++searchSeq,
 				}),
 				{
 					summarize: (r, p) => {

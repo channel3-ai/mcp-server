@@ -23,7 +23,7 @@ import { type DetailFocus, DetailView } from "@/storefront/detail-view";
 import { InlineError, InlineResults, InlineSearchSkeleton } from "@/storefront/inline-views";
 import { type ResultSetPresence, usePresence } from "@/storefront/instance-presence";
 import { buildContextReport, toFocusContext, toSyncedProduct } from "@/storefront/model-copy";
-import type { PendingSearch, SyncedProduct, ViewingContext } from "@/storefront/types";
+import type { OrderKey, PendingSearch, SyncedProduct, ViewingContext } from "@/storefront/types";
 
 interface SearchState {
 	key: string;
@@ -206,7 +206,7 @@ function detectPendingInput(
 
 function useModelDrivenState() {
 	const [sceneState, dispatch] = React.useReducer(sceneReducer, INITIAL_SCENE);
-	const [orderKey, setOrderKey] = React.useState<number | null>(null);
+	const [orderKey, setOrderKey] = React.useState<OrderKey | null>(null);
 
 	const pendingRef = React.useRef<PendingSearch | null>(null);
 
@@ -247,7 +247,7 @@ function useModelDrivenState() {
 		const result = parsed.data as MountResult;
 		const asOf = result.as_of ? Date.parse(result.as_of) : Number.NaN;
 		if (Number.isFinite(asOf)) {
-			setOrderKey(asOf);
+			setOrderKey({ asOf, seq: result.seq ?? 0 });
 		}
 		dispatch({
 			type: "result",
