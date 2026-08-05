@@ -5,18 +5,14 @@ import { createClient, type ProductDetail } from "../channel3/client";
 import { toPublicProduct } from "../channel3/format";
 import { findSimilarProductsPage, searchProductsPage } from "../channel3/products";
 import {
-	BrowseProductsSchema,
+	type GetDetailsResult,
 	GetDetailsResultSchema,
+	type GetPriceHistoryResult,
 	GetPriceHistoryResultSchema,
-	GetSimilarSchema,
-	ProductIdRequestSchema,
+	type ProductsPageResult,
 	ProductsPageResultSchema,
-} from "../schemas";
-import type {
-	GetDetailsResult,
-	GetPriceHistoryResult,
-	ProductsPageResult,
 } from "../../shared/wire";
+import { BrowseProductsSchema, GetSimilarSchema, ProductIdRequestSchema } from "../schemas";
 import { asExtAppsServer, STOREFRONT_RESOURCE_URI } from "../storefront";
 import type { ToolContext } from "../types";
 import { READ_ONLY_ANNOTATIONS, runTool } from "./helpers";

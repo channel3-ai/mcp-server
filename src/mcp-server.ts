@@ -51,13 +51,11 @@ export function createServer(env: Bindings, request: Request) {
 		},
 		{
 			instructions:
-				"Channel3 searches for products from thousands of retailers.\n" +
-				"`search_products` finds products from a description in natural language.\n" +
-				"`get_products` returns the full data for a product. Use an ID from a " +
-				"`search_products` result, or a product URL from any retailer.\n" +
-				"The results show to the user in a storefront UI. Do not list the products, " +
-				"the prices, or the specifications that the user can see. Give a short " +
-				"comment, a trade-off, or a recommendation.",
+				"Use Channel3 to search products and compare live retailer offers.\n" +
+				"Call search_products separately for each distinct product type.\n" +
+				"Call get_products for full details by product ID or retailer URL.\n" +
+				"Results appear in a storefront UI — comment or recommend; do not re-list what the user can see.\n" +
+				'For deictic references ("this product"), use the storefront model context.',
 			cacheHints: {
 				"tools/list": { ttlMs: 86_400_000, cacheScope: "public" },
 				"prompts/list": { ttlMs: 86_400_000, cacheScope: "public" },

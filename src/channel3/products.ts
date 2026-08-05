@@ -42,7 +42,7 @@ export async function searchProducts(
 	const page = await searchProductsPage(createClient(apiKey, baseURL), {
 		query: params.query,
 		image_url: params.image_url,
-		limit: 20,
+		limit: 8,
 	});
 	return {
 		products: page.products.map(formatProductSummary),

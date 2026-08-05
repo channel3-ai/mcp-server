@@ -3,7 +3,8 @@ import type { McpServer } from "@modelcontextprotocol/server";
 
 import { productAnchorLine } from "../channel3/format";
 import { getProducts } from "../channel3/products";
-import { GetProductsRequestSchema, GetProductsResultSchema } from "../schemas";
+import { GetProductsResultSchema } from "../../shared/wire";
+import { GetProductsRequestSchema } from "../schemas";
 import { asExtAppsServer, STOREFRONT_RESOURCE_URI } from "../storefront";
 import type { ToolContext } from "../types";
 import { READ_ONLY_ANNOTATIONS, runTool } from "./helpers";
@@ -15,15 +16,9 @@ export function registerGetProducts(server: McpServer, ctx: ToolContext) {
 		{
 			title: "Get Products",
 			description:
-				"Get the full data for one product or more: all offers, the description, the " +
-				"attributes, and the images.\n" +
-				"Use a product ID from a `search_products` result, or a product URL from any " +
-				"retailer. Give several IDs in one call to compare products. The tool fetches " +
-				"them together.\n" +
-				"Do not use this tool to find products. Use `search_products` for that.\n" +
-				"The data shows to the user in the storefront UI. Do not repeat the " +
-				"specifications or the prices in your reply. Give a comment, a comparison, or " +
-				"a recommendation.",
+				"Get full product data (offers, description, attributes, images) by product ID " +
+				"from a search result, or by retailer URL. Pass several IDs in one call to compare.\n" +
+				"Use search_products to find products. Returns details in the storefront UI.",
 			inputSchema: GetProductsRequestSchema,
 			outputSchema: GetProductsResultSchema,
 			annotations: READ_ONLY_ANNOTATIONS,
@@ -41,10 +36,7 @@ export function registerGetProducts(server: McpServer, ctx: ToolContext) {
 				{
 					summarize: (r) => {
 						const lines = [
-							`Found the full data for ${r.products.length} product${r.products.length === 1 ? "" : "s"}.`,
-							"These products show to the user in the storefront. The user can see them.",
-							"Do not repeat the specifications, the descriptions, or the prices.",
-							"Give a comment, a comparison, or a recommendation.",
+							`Fetched ${r.products.length} product${r.products.length === 1 ? "" : "s"}.`,
 							"",
 							...r.products.map(productAnchorLine),
 						];
