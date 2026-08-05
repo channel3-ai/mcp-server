@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 
 import pkg from "../package.json";
+import type { Analytics } from "./analytics/posthog";
 import { registerPrompts } from "./prompts";
 import { registerStorefrontResource } from "./storefront";
 import { registerTools } from "./tools/register";
@@ -15,17 +16,21 @@ function readApiKey(request: Request): string | undefined {
 	return undefined;
 }
 
-export function createServer(env: Bindings, request: Request) {
-	const url = new URL(request.url);
-	const origin = url.origin;
+export function propsFromRequest(env: Bindings, request: Request): Props {
 	const apiKey = readApiKey(request);
-	const props: Props = {
+	return {
 		apiKey: apiKey || env.DEFAULT_CHANNEL3_API_KEY,
 		baseURL: env.CHANNEL3_BASE_URL || undefined,
 		isFreeTier: !apiKey,
 		clientIP: request.headers.get("cf-connecting-ip") || "unknown",
 		userAgent: request.headers.get("user-agent") || "unknown",
 	};
+}
+
+export function createServer(env: Bindings, request: Request, analytics: Analytics) {
+	const url = new URL(request.url);
+	const origin = url.origin;
+	const props = analytics.props;
 
 	const server = new McpServer(
 		{
@@ -63,7 +68,7 @@ export function createServer(env: Bindings, request: Request) {
 		},
 	);
 
-	const ctx: ToolContext = { props, env, origin };
+	const ctx: ToolContext = { props, env, origin, analytics };
 	registerTools(server, ctx);
 	registerPrompts(server);
 	registerStorefrontResource(server);

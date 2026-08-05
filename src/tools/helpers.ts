@@ -27,6 +27,7 @@ function logToolCall(
 	ctx: ToolContext,
 	outcome: "success" | "error",
 	params: unknown,
+	durationMs: number,
 	errorMessage?: string,
 ): void {
 	console.log(
@@ -34,6 +35,7 @@ function logToolCall(
 			event: "mcp_tool_call",
 			tool: toolName,
 			outcome,
+			duration_ms: durationMs,
 			params,
 			client_ip: ctx.props.clientIP,
 			user_agent: ctx.props.userAgent,
@@ -41,6 +43,33 @@ function logToolCall(
 			...(errorMessage ? { error: errorMessage } : {}),
 		}),
 	);
+}
+
+type ToolOutcome = { response: unknown } | { error: unknown };
+
+async function trackToolCall(
+	toolName: string,
+	ctx: ToolContext,
+	params: unknown,
+	durationMs: number,
+	outcome: ToolOutcome,
+): Promise<void> {
+	const error = "error" in outcome ? outcome.error : undefined;
+	logToolCall(
+		toolName,
+		ctx,
+		error ? "error" : "success",
+		params,
+		durationMs,
+		error ? (error instanceof Error ? error.message : String(error)) : undefined,
+	);
+	await ctx.analytics.captureToolCall({
+		toolName,
+		parameters: params,
+		durationMs,
+		isError: Boolean(error),
+		...("error" in outcome ? { error: outcome.error } : { response: outcome.response }),
+	});
 }
 
 interface RunToolOptions<P, R> {
@@ -54,9 +83,12 @@ export async function runTool<P, R extends Record<string, unknown>>(
 	handler: (params: P) => Promise<R>,
 	options?: RunToolOptions<P, R>,
 ): Promise<ToolCallResult> {
+	const start = Date.now();
 	try {
 		const structuredContent = await handler(params);
-		logToolCall(toolName, ctx, "success", params);
+		await trackToolCall(toolName, ctx, params, Date.now() - start, {
+			response: structuredContent,
+		});
 		return {
 			content: [
 				{
@@ -69,13 +101,7 @@ export async function runTool<P, R extends Record<string, unknown>>(
 			structuredContent,
 		};
 	} catch (err: unknown) {
-		logToolCall(
-			toolName,
-			ctx,
-			"error",
-			params,
-			err instanceof Error ? err.message : String(err),
-		);
+		await trackToolCall(toolName, ctx, params, Date.now() - start, { error: err });
 		return errorResponse(err);
 	}
 }
