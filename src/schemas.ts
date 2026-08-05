@@ -1,19 +1,22 @@
 import type { PriceHistoryPoint, PriceStatistics, ProductOffer } from "@channel3/sdk/resources";
 import { z } from "zod";
 
-const SearchQuerySchema = z.string().trim().min(1);
-const ImageUrlSchema = z.string();
-
 const searchCriteria = {
-	query: SearchQuerySchema.optional().describe(
-		"One product type and its constraints in natural language " +
-			"(brand, color, material, size, price, gender).\n" +
-			'Good: "red leather jacket under $200"; "leather golf glove under $40".\n' +
-			'Bad: "gift ideas for dad"; "cool sneakers"; "golf glove or rangefinder".',
-	),
-	image_url: ImageUrlSchema.optional().describe(
-		"Public image URL for visual search. Combine with `query` for text + image.",
-	),
+	query: z
+		.string()
+		.trim()
+		.min(1)
+		.optional()
+		.describe(
+			"One product type and its constraints in natural language " +
+				"(brand, color, material, size, price, gender).\n" +
+				'Good: "red leather jacket under $200"; "leather golf glove under $40".\n' +
+				'Bad: "gift ideas for dad"; "cool sneakers"; "golf glove or rangefinder".',
+		),
+	image_url: z
+		.string()
+		.optional()
+		.describe("Public image URL for visual search. Combine with `query` for text + image."),
 };
 
 export const SearchRequestSchema = z
@@ -130,6 +133,8 @@ const AsOfSchema = z
 	.describe("ISO timestamp of when this result was produced; prices are live as of this moment.");
 
 export const SearchProductsResultSchema = z.object({
+	query: z.string().optional().describe("The text query this result answers."),
+	image_url: z.string().optional().describe("The image URL this result answers."),
 	products: z.array(ProductSummarySchema),
 	next_page_token: z
 		.string()

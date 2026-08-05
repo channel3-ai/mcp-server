@@ -30,6 +30,8 @@ export function registerSearchProducts(server: McpServer, ctx: ToolContext) {
 				ctx,
 				params,
 				async (p) => ({
+					query: p.query,
+					image_url: p.image_url,
 					...(await searchProducts(ctx.props.apiKey, p, ctx.props.baseURL)),
 					as_of: new Date().toISOString(),
 				}),

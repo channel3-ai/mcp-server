@@ -1,7 +1,7 @@
 import type { ProductDetail } from "@channel3/sdk/resources";
 import { formatCurrency, leadOffer } from "@shared/format";
 
-import type { PresenceRecord } from "@/storefront/instance-presence";
+import type { PresenceRecord, ResultSetPresence } from "@/storefront/instance-presence";
 import type {
 	OfferFocusSummary,
 	PriceFocusStats,
@@ -133,8 +133,8 @@ function focusLines(viewing: ViewingContext): string[] {
 	return lines;
 }
 
-function resultSetLabel(record: PresenceRecord): string {
-	return record.query ? `"${record.query}"` : record.imageUrl ? "image search" : "products";
+function resultSetLabel(set: ResultSetPresence): string {
+	return set.query ? `"${set.query}"` : set.imageUrl ? "image search" : "products";
 }
 
 /**
@@ -149,12 +149,12 @@ function resultSetLabel(record: PresenceRecord): string {
  * (Claude) make the model fetch it on demand rather than injecting it.
  */
 export function buildContextReport(self: PresenceRecord, peers: PresenceRecord[]): string {
-	const all = [self, ...peers].filter((r) => r.resultSet || r.focus);
+	const all = [self, ...peers].filter((r) => r.resultSets.length > 0 || r.focus);
 	const byRecency = [...all].sort(
 		(a, b) =>
 			(b.activatedAt ?? 0) - (a.activatedAt ?? 0) || (b.orderKey ?? 0) - (a.orderKey ?? 0),
 	);
-	const shown = byRecency.slice(0, MAX_RESULT_SETS);
+	const shown = byRecency.flatMap((record) => record.resultSets).slice(0, MAX_RESULT_SETS);
 
 	const lines: string[] = [];
 	if (shown.length > 0) {
@@ -163,20 +163,14 @@ export function buildContextReport(self: PresenceRecord, peers: PresenceRecord[]
 				? "The shopper has 1 result set open:"
 				: `The shopper has ${shown.length} result sets open:`,
 		);
-		shown.forEach((record, index) => {
-			const rs = record.resultSet;
-			const label = resultSetLabel(record);
-			if (!rs) {
-				lines.push(`${index + 1}. ${label}`);
-				return;
-			}
+		shown.forEach((rs, index) => {
 			const transcriptNote =
 				rs.transcriptCount > 0
 					? ` (first ${rs.transcriptCount} in the search result above)`
 					: "";
 			const display = rs.display === "fullscreen" ? "fullscreen grid" : "inline";
 			lines.push(
-				`${index + 1}. ${label} — ${rs.loadedCount} loaded${transcriptNote}, ${display}`,
+				`${index + 1}. ${resultSetLabel(rs)} — ${rs.loadedCount} loaded${transcriptNote}, ${display}`,
 			);
 		});
 		lines.push("");
@@ -205,8 +199,8 @@ export function buildContextReport(self: PresenceRecord, peers: PresenceRecord[]
 	}
 
 	const delta: { id: string; title: string }[] = [];
-	for (const record of byRecency) {
-		for (const p of record.resultSet?.delta ?? []) {
+	for (const set of byRecency.flatMap((record) => record.resultSets)) {
+		for (const p of set.delta) {
 			if (!delta.some((d) => d.id === p.id)) {
 				delta.push(p);
 			}

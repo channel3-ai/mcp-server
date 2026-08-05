@@ -25,6 +25,7 @@ import { buildContextReport, toFocusContext, toSyncedProduct } from "@/storefron
 import type { PendingSearch, SyncedProduct, ViewingContext } from "@/storefront/types";
 
 interface SearchState {
+	key: string;
 	products: ProductDetail[];
 	query?: string;
 	imageUrl?: string;
@@ -47,16 +48,20 @@ type ToolResultParams = McpUiToolResultNotification["params"];
 
 const REMOUNT_HEAL_DELAY_MS = 750;
 
+const MAX_STACKED_RESULT_SETS = 4;
+
 const RELOAD_FAILURE_MESSAGE =
 	"These results couldn't be reloaded. Ask again in the chat to retry.";
 
 interface ModelDrivenScene {
 	scene: Scene;
-	search: SearchState | null;
+	searches: SearchState[];
+	activeKey: string | null;
 	detail: DetailState | null;
 	pending: PendingSearch | null;
 	lostResult: PendingSearch | null;
 	toolError: string | null;
+	nonceSeq: number;
 }
 
 type ModelAction =
@@ -70,38 +75,68 @@ type ModelAction =
 	| { type: "error"; message: string }
 	| { type: "resultLost"; input: PendingSearch }
 	| { type: "cancelled" }
+	| { type: "activate"; key: string }
 	| { type: "openDetail"; product: ProductDetail; origin: DetailOrigin }
 	| { type: "backDetail" }
 	| { type: "openSearch" };
 
 const INITIAL_SCENE: ModelDrivenScene = {
 	scene: "search",
-	search: null,
+	searches: [],
+	activeKey: null,
 	detail: null,
 	pending: null,
 	lostResult: null,
 	toolError: null,
+	nonceSeq: 0,
 };
+
+function searchKey(input: PendingSearch | null): string {
+	return input?.query || input?.imageUrl || "results";
+}
+
+function activeSearch(state: {
+	searches: SearchState[];
+	activeKey: string | null;
+}): SearchState | null {
+	return (
+		state.searches.find((set) => set.key === state.activeKey) ??
+		state.searches[state.searches.length - 1] ??
+		null
+	);
+}
 
 function sceneReducer(state: ModelDrivenScene, action: ModelAction): ModelDrivenScene {
 	switch (action.type) {
 		case "input":
 			return { ...state, pending: action.input, toolError: null };
-		case "result":
+		case "result": {
+			const key = searchKey(action.input);
+			const nonceSeq = state.nonceSeq + 1;
+			const set: SearchState = {
+				key,
+				products: action.products,
+				query: action.input?.query,
+				imageUrl: action.input?.imageUrl,
+				nextPageToken: action.nextPageToken,
+				nonce: nonceSeq,
+			};
+			const replaced = state.searches.some((existing) => existing.key === key);
 			return {
 				...state,
 				pending: null,
 				lostResult: null,
 				toolError: null,
 				scene: "search",
-				search: {
-					products: action.products,
-					query: action.input?.query,
-					imageUrl: action.input?.imageUrl,
-					nextPageToken: action.nextPageToken,
-					nonce: (state.search?.nonce ?? 0) + 1,
-				},
+				searches: replaced
+					? state.searches.map((existing) => (existing.key === key ? set : existing))
+					: [...state.searches, set].slice(-MAX_STACKED_RESULT_SETS),
+				activeKey: key,
+				nonceSeq,
 			};
+		}
+		case "activate":
+			return { ...state, activeKey: action.key };
 		case "error":
 			return { ...state, pending: null, lostResult: null, toolError: action.message };
 		case "resultLost":
@@ -145,6 +180,12 @@ function sceneReducer(state: ModelDrivenScene, action: ModelAction): ModelDriven
 	}
 }
 
+function readSearchCriteria(source: Record<string, unknown> | undefined): PendingSearch | null {
+	const query = typeof source?.query === "string" ? source.query : undefined;
+	const imageUrl = typeof source?.image_url === "string" ? source.image_url : undefined;
+	return query || imageUrl ? { query, imageUrl } : null;
+}
+
 function detectPendingInput(
 	tool: string | undefined,
 	args: Record<string, unknown> | undefined,
@@ -152,11 +193,8 @@ function detectPendingInput(
 	switch (tool) {
 		case "get_products":
 			return { label: "Fetching product details…" };
-		case "search_products": {
-			const query = typeof args?.query === "string" ? args.query : undefined;
-			const imageUrl = typeof args?.image_url === "string" ? args.image_url : undefined;
-			return query || imageUrl ? { query, imageUrl } : null;
-		}
+		case "search_products":
+			return readSearchCriteria(args);
 		default:
 			return null;
 	}
@@ -190,7 +228,9 @@ function useModelDrivenState() {
 			return;
 		}
 		const sc = params.structuredContent as Record<string, unknown> | undefined;
-		const input = pendingRef.current;
+		// A host can deliver concurrent tool results to one instance, and the bridge
+		// identifies neither, so only the echoed criteria pair a result to its search.
+		const input = readSearchCriteria(sc) ?? pendingRef.current;
 		pendingRef.current = null;
 		if (!sc || !Array.isArray(sc.products)) {
 			if (input && (input.query || input.imageUrl)) {
@@ -226,6 +266,8 @@ function useModelDrivenState() {
 		[],
 	);
 
+	const activate = React.useCallback((key: string) => dispatch({ type: "activate", key }), []);
+
 	const openSearch = React.useCallback(() => dispatch({ type: "openSearch" }), []);
 
 	const backDetail = React.useCallback(() => dispatch({ type: "backDetail" }), []);
@@ -243,11 +285,13 @@ function useModelDrivenState() {
 
 	return {
 		...sceneState,
+		search: activeSearch(sceneState),
 		orderKey,
 		onToolInput,
 		onToolResult,
 		onToolCancelled,
 		openDetail,
+		activate,
 		openSearch,
 		backDetail,
 		hydrate,
@@ -294,7 +338,7 @@ function StorefrontCore({
 	state: ModelDrivenState;
 	hostContext: McpUiHostContext | undefined;
 }) {
-	const { search, detail, scene, pending, lostResult, toolError } = state;
+	const { search, searches, detail, scene, pending, lostResult, toolError } = state;
 	const { hydrate, failHydration } = state;
 	const queryClient = useQueryClient();
 
@@ -425,7 +469,9 @@ function StorefrontCore({
 	const viewing: ViewingContext | null =
 		scene === "detail" && detail && focusProduct
 			? toFocusContext(focusProduct, {
-					inTranscript: search?.products.some((p) => p.id === focusProduct.id) ?? false,
+					inTranscript: searches.some((set) =>
+						set.products.some((p) => p.id === focusProduct.id),
+					),
 					variantTitle:
 						focusProduct.id !== detail.product.id ? focusProduct.title : undefined,
 					priceStats: focused?.priceStats,
@@ -439,22 +485,25 @@ function StorefrontCore({
 					}
 				: null;
 
-	const initialCount = search?.products.length ?? 0;
-	const resultSet: ResultSetPresence | null = search
-		? {
-				transcriptCount: initialCount,
-				loadedCount: synced.length,
-				delta: synced.slice(initialCount).map((p) => ({ id: p.id, title: p.title })),
-				display: fullscreen ? "fullscreen" : "inline",
-			}
-		: null;
+	// Only the active set can grow past its transcript products: paging happens in the
+	// view the shopper opened.
+	const resultSets: ResultSetPresence[] = searches.map((set) => {
+		const active = set.key === search?.key;
+		const loaded = active ? synced : set.products.map(toSyncedProduct);
+		return {
+			query: set.query,
+			imageUrl: set.imageUrl,
+			transcriptCount: set.products.length,
+			loadedCount: loaded.length,
+			delta: loaded.slice(set.products.length).map((p) => ({ id: p.id, title: p.title })),
+			display: active && fullscreen ? "fullscreen" : "inline",
+		};
+	});
 
 	const presence = usePresence({
 		orderKey: state.orderKey,
 		instanceId,
-		query: search?.query,
-		imageUrl: search?.imageUrl,
-		resultSet,
+		resultSets,
 		focus: viewing,
 		fullscreen,
 	});
@@ -483,13 +532,23 @@ function StorefrontCore({
 	}, [bridge, fullscreen, state]);
 
 	const openDetailFromInline = React.useCallback(
-		(product: ProductDetail) => {
+		(product: ProductDetail, sourceKey: string) => {
+			state.activate(sourceKey);
 			state.openDetail(product, "inline");
 			if (!fullscreen) {
 				void goFullscreen();
 			}
 		},
 		[state, fullscreen, goFullscreen],
+	);
+
+	const browseAll = React.useCallback(
+		(sourceKey: string) => {
+			state.activate(sourceKey);
+			state.openSearch();
+			void goFullscreen();
+		},
+		[state, goFullscreen],
 	);
 
 	const prefetchProduct = React.useCallback(
@@ -569,25 +628,27 @@ function StorefrontCore({
 				/>
 			);
 		body = wideLayout(sceneBody);
-	} else if (pending) {
-		body = <InlineSearchSkeleton />;
-	} else if (toolError) {
-		body = <InlineError message={toolError} />;
 	} else if (settlingInline) {
 		body = <InlineSearchSkeleton />;
-	} else if (search) {
+	} else if (searches.length > 0) {
 		body = (
-			<InlineResults
-				products={search.products}
-				onSelect={openDetailFromInline}
-				onPrefetchProduct={prefetchProduct}
-				onBrowseAll={() => {
-					state.openSearch();
-					void goFullscreen();
-				}}
-				locale={locale}
-			/>
+			<div className="flex flex-col gap-6">
+				{searches.map((set) => (
+					<InlineResults
+						key={set.key}
+						products={set.products}
+						onSelect={(product) => openDetailFromInline(product, set.key)}
+						onPrefetchProduct={prefetchProduct}
+						onBrowseAll={() => browseAll(set.key)}
+						locale={locale}
+					/>
+				))}
+				{pending ? <InlineSearchSkeleton /> : null}
+				{toolError ? <InlineError message={toolError} /> : null}
+			</div>
 		);
+	} else if (toolError) {
+		body = <InlineError message={toolError} />;
 	} else {
 		body = <InlineSearchSkeleton />;
 	}

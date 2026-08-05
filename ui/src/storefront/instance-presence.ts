@@ -11,6 +11,8 @@ const PEER_TTL_MS = 5000;
 const ACTIVATION_EVENTS = ["pointerdown", "keydown", "touchstart", "wheel"] as const;
 
 export interface ResultSetPresence {
+	query?: string;
+	imageUrl?: string;
 	transcriptCount: number;
 	loadedCount: number;
 	delta: { id: string; title: string }[];
@@ -23,9 +25,7 @@ export interface PresenceRecord {
 	// Sibling instances share a sandbox origin and therefore a clock, so this
 	// compares across instances even when their order keys don't.
 	activatedAt: number | null;
-	query?: string;
-	imageUrl?: string;
-	resultSet: ResultSetPresence | null;
+	resultSets: ResultSetPresence[];
 	focus: ViewingContext | null;
 }
 
@@ -45,22 +45,20 @@ export interface PresenceState {
 export interface PresenceInput {
 	orderKey: number | null;
 	instanceId: string;
-	query?: string;
-	imageUrl?: string;
-	resultSet: ResultSetPresence | null;
+	resultSets: ResultSetPresence[];
 	focus: ViewingContext | null;
 	fullscreen: boolean;
 }
 
 export function usePresence(input: PresenceInput): PresenceState {
-	const { orderKey, instanceId, query, imageUrl, resultSet, focus, fullscreen } = input;
+	const { orderKey, instanceId, resultSets, focus, fullscreen } = input;
 	const [isPublisher, setIsPublisher] = React.useState(false);
 	const [peers, setPeers] = React.useState<PresenceRecord[]>([]);
 	const [selfState, setSelfState] = React.useState<PresenceRecord | null>(null);
 	const activatedAtRef = React.useRef<number | null>(null);
 
-	const latestRef = React.useRef({ orderKey, query, imageUrl, resultSet, focus, fullscreen });
-	latestRef.current = { orderKey, query, imageUrl, resultSet, focus, fullscreen };
+	const latestRef = React.useRef({ orderKey, resultSets, focus, fullscreen });
+	latestRef.current = { orderKey, resultSets, focus, fullscreen };
 
 	const peersRef = React.useRef(new Map<string, { presence: PresenceRecord; seenAt: number }>());
 	const announceRef = React.useRef<(() => void) | null>(null);
@@ -72,9 +70,7 @@ export function usePresence(input: PresenceInput): PresenceState {
 			orderKey: latest.orderKey,
 			instanceId,
 			activatedAt: activatedAtRef.current,
-			query: latest.query,
-			imageUrl: latest.imageUrl,
-			resultSet: latest.resultSet,
+			resultSets: latest.resultSets,
 			focus: latest.focus,
 		};
 	}, [instanceId]);
@@ -210,7 +206,7 @@ export function usePresence(input: PresenceInput): PresenceState {
 	// Presence data (focus, loaded pages) must reach siblings and the publisher as soon as
 	// it changes, not on the next heartbeat — otherwise a freshly opened PDP is invisible
 	// for up to HEARTBEAT_INTERVAL_MS.
-	const serialized = JSON.stringify({ orderKey, query, imageUrl, resultSet, focus });
+	const serialized = JSON.stringify({ orderKey, resultSets, focus });
 	React.useEffect(() => {
 		if (lastAnnouncedRef.current === serialized) {
 			return;
