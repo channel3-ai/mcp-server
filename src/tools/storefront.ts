@@ -31,6 +31,10 @@ function toProductsPage(page: {
 	};
 }
 
+function threadProperty(p: { thread_id?: string }): Record<string, unknown> {
+	return p.thread_id ? { thread_id: p.thread_id } : {};
+}
+
 export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 	const client = createClient(ctx.props.apiKey, ctx.props.baseURL);
 
@@ -51,7 +55,10 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 				ctx,
 				params,
 				async (p) => toProductsPage(await searchProductsPage(client, p)),
-				{ summarize: (r) => `${r.products.length} products` },
+				{
+					trackProperties: threadProperty(params),
+					summarize: (r) => `${r.products.length} products`,
+				},
 			),
 	);
 
@@ -72,7 +79,10 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 				ctx,
 				params,
 				async (p) => toProductsPage(await findSimilarProductsPage(client, p)),
-				{ summarize: (r) => `${r.products.length} similar products` },
+				{
+					trackProperties: threadProperty(params),
+					summarize: (r) => `${r.products.length} similar products`,
+				},
 			),
 	);
 
@@ -95,7 +105,10 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 				async (p): Promise<GetDetailsResult> => ({
 					product: toPublicProduct(await client.products.retrieve(p.product_id)),
 				}),
-				{ summarize: (r) => r.product.title },
+				{
+					trackProperties: threadProperty(params),
+					summarize: (r) => r.product.title,
+				},
 			),
 	);
 
@@ -129,7 +142,10 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 						statistics: history?.statistics ?? null,
 					};
 				},
-				{ summarize: (r) => `${r.history?.length ?? 0} price points` },
+				{
+					trackProperties: threadProperty(params),
+					summarize: (r) => `${r.history?.length ?? 0} price points`,
+				},
 			),
 	);
 }

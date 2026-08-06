@@ -7,6 +7,7 @@ import {
 } from "@posthog/mcp";
 import { createMcpHandler } from "agents/mcp/server";
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { z } from "zod";
 
 import { Analytics } from "./analytics/posthog";
@@ -60,14 +61,15 @@ async function readInitialize(request: Request): Promise<InitializeInfo | null> 
 	return null;
 }
 
-app.use("/", async (c, next) => {
+app.use("*", async (c, next) => {
 	const init =
-		c.req.method === "POST" && !c.req.header(MCP_SESSION_HEADER)
+		c.req.path === "/" && c.req.method === "POST" && !c.req.header(MCP_SESSION_HEADER)
 			? await readInitialize(c.req.raw)
 			: null;
+	const sessionHeader = c.req.header(MCP_SESSION_HEADER);
 	const session: SessionTokenPayload | null = init
 		? { sessionId: newSessionId(), ...init }
-		: decodeSessionId(c.req.header(MCP_SESSION_HEADER));
+		: (decodeSessionId(sessionHeader) ?? (sessionHeader ? { sessionId: sessionHeader } : null));
 	const analytics = new Analytics(c.env, propsFromRequest(c.env, c.req.raw), session);
 	c.set("analytics", analytics);
 
@@ -77,6 +79,47 @@ app.use("/", async (c, next) => {
 	await next();
 	if (init && session) {
 		c.header(MCP_SESSION_HEADER, encodeSessionId(session));
+	}
+});
+
+app.use(
+	"/analytics/events",
+	cors({
+		origin: "*",
+		allowMethods: ["POST"],
+		allowHeaders: ["content-type", MCP_SESSION_HEADER],
+	}),
+);
+
+const analyticsEventsSchema = z.object({
+	events: z
+		.array(
+			z.object({
+				event: z.string().min(1),
+				properties: z.record(z.string(), z.unknown()).optional(),
+				timestamp: z.string().optional(),
+			}),
+		)
+		.min(1)
+		.max(50),
+});
+
+app.post("/analytics/events", async (c) => {
+	try {
+		const parsed = analyticsEventsSchema.safeParse(await c.req.json().catch(() => null));
+		if (!parsed.success) {
+			return c.json({ error: "invalid event payload" }, 400);
+		}
+		const analytics = c.var.analytics;
+		await Promise.all(
+			parsed.data.events.map((event) =>
+				analytics.captureEvent(event.event, event.properties ?? {}, event.timestamp),
+			),
+		);
+		return c.json({ ok: true }, 202);
+	} catch (err) {
+		console.error("analytics events error", err);
+		return c.json({ error: "internal error" }, 500);
 	}
 });
 

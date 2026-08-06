@@ -17,13 +17,6 @@ export function asExtAppsServer(server: McpServer): ExtAppsServer {
 	return server as unknown as ExtAppsServer;
 }
 
-const STOREFRONT_UI_META = {
-	ui: {
-		prefersBorder: false,
-		csp: { resourceDomains: ["https://cdn.trychannel3.com", "https://assets.claude.ai"] },
-	},
-};
-
 // Claude validates ui.domain against a SHA-256 of the connector URL, so the value must be derived per deployment (production vs tunnel), not hardcoded.
 async function claudeSandboxDomain(connectorUrl: string): Promise<string> {
 	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(connectorUrl));
@@ -35,7 +28,14 @@ async function claudeSandboxDomain(connectorUrl: string): Promise<string> {
 
 export async function registerStorefrontResource(server: McpServer, connectorUrl: string) {
 	const meta = {
-		ui: { ...STOREFRONT_UI_META.ui, domain: await claudeSandboxDomain(connectorUrl) },
+		ui: {
+			prefersBorder: false,
+			domain: await claudeSandboxDomain(connectorUrl),
+			csp: {
+				resourceDomains: ["https://cdn.trychannel3.com", "https://assets.claude.ai"],
+				connectDomains: [connectorUrl],
+			},
+		},
 	};
 	registerAppResource(
 		asExtAppsServer(server),

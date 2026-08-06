@@ -72,6 +72,22 @@ export const SearchCriteriaSchema = z.object(searchCriteria);
 
 const seqSchema = { seq: z.number().int().optional() };
 
+const threadIdResult = z
+	.string()
+	.describe(
+		"Conversation thread ID. Pass it back unchanged as `thread_id` on every follow-up call in this conversation.",
+	);
+
+export const MCP_SESSION_HEADER = "mcp-session-id";
+
+const analyticsFields = {
+	session_id: z.string().optional().describe("PostHog MCP session ID for analytics correlation."),
+	server_origin: z
+		.string()
+		.optional()
+		.describe("Origin of this MCP server; the storefront UI posts analytics events here."),
+};
+
 export const SearchProductsResultSchema = z.object({
 	...searchCriteria,
 	products: z.array(ProductSummarySchema),
@@ -80,6 +96,8 @@ export const SearchProductsResultSchema = z.object({
 		.nullable()
 		.describe("Opaque pagination token used by the storefront UI; not usable via this tool."),
 	as_of: AsOfSchema,
+	...analyticsFields,
+	thread_id: threadIdResult,
 	...seqSchema,
 });
 
@@ -87,6 +105,8 @@ export const GetProductsResultSchema = z.object({
 	products: z.array(ProductSchema),
 	unresolved: z.array(z.string()).optional(),
 	as_of: AsOfSchema,
+	...analyticsFields,
+	thread_id: threadIdResult,
 });
 
 export const ProductsPageResultSchema = z.object({
@@ -110,6 +130,8 @@ export const MountResultSchema = z.object({
 	products: z.array(ProductSchema),
 	next_page_token: z.string().nullable().optional(),
 	as_of: z.string().optional(),
+	...analyticsFields,
+	thread_id: z.string().optional(),
 	...seqSchema,
 });
 

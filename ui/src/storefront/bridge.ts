@@ -10,6 +10,8 @@ import {
 } from "@shared/wire";
 import type { z } from "zod";
 
+import { getThreadId } from "@/storefront/identity";
+
 export interface BrowseInput {
 	query?: string;
 	imageUrl?: string;
@@ -51,6 +53,11 @@ function structuredContent<T>(result: ToolResult, tool: string, schema: z.ZodTyp
 	return parsed.data as T;
 }
 
+function threadArg(): { thread_id?: string } {
+	const threadId = getThreadId();
+	return threadId ? { thread_id: threadId } : {};
+}
+
 export class AppBridge implements StorefrontBridge {
 	private lastContextPayload: string | null = null;
 	private warnedNoModelContext = false;
@@ -64,6 +71,7 @@ export class AppBridge implements StorefrontBridge {
 				query: input.query || undefined,
 				image_url: input.imageUrl,
 				page_token: input.pageToken,
+				...threadArg(),
 			},
 		});
 		const page = structuredContent<ProductsPageResult>(
@@ -77,7 +85,7 @@ export class AppBridge implements StorefrontBridge {
 	async getSimilar(productId: string, limit: number): Promise<ProductDetail[]> {
 		const result = await this.app.callServerTool({
 			name: "get_similar",
-			arguments: { product_id: productId, limit },
+			arguments: { product_id: productId, limit, ...threadArg() },
 		});
 		return structuredContent<ProductsPageResult>(
 			result,
@@ -89,7 +97,7 @@ export class AppBridge implements StorefrontBridge {
 	async getProduct(productId: string): Promise<ProductDetail> {
 		const result = await this.app.callServerTool({
 			name: "get_details",
-			arguments: { product_id: productId },
+			arguments: { product_id: productId, ...threadArg() },
 		});
 		return structuredContent<GetDetailsResult>(result, "get_details", GetDetailsResultSchema)
 			.product;
@@ -98,7 +106,7 @@ export class AppBridge implements StorefrontBridge {
 	async getPriceHistory(productId: string): Promise<GetPriceHistoryResult> {
 		const result = await this.app.callServerTool({
 			name: "get_price_history",
-			arguments: { product_id: productId },
+			arguments: { product_id: productId, ...threadArg() },
 		});
 		return structuredContent<GetPriceHistoryResult>(
 			result,
