@@ -8,6 +8,8 @@ import { ProductGrid } from "@/registry/default/components/product-grid";
 import { useInViewport } from "@/registry/default/hooks/use-in-viewport";
 import type { StorefrontBridge } from "@/storefront/bridge";
 import { browseQueryOptions } from "@/storefront/browse-query";
+import { ProductSaveToggle } from "@/storefront/save-toggle";
+import type { SavedProducts } from "@/storefront/use-saved-products";
 
 export function BrowseGridSkeleton({ caption }: { caption?: string }) {
 	return (
@@ -20,6 +22,7 @@ export function BrowseGridSkeleton({ caption }: { caption?: string }) {
 
 export function BrowseView({
 	bridge,
+	saved,
 	initialQuery,
 	initialImageUrl,
 	initialResults,
@@ -32,6 +35,7 @@ export function BrowseView({
 	locale,
 }: {
 	bridge: StorefrontBridge;
+	saved: SavedProducts;
 	initialQuery?: string;
 	initialImageUrl?: string;
 	initialResults?: ProductDetail[];
@@ -106,6 +110,9 @@ export function BrowseView({
 						products={results}
 						onSelect={onSelect}
 						onPreload={onPrefetchProduct}
+						cardAction={(product) => (
+							<ProductSaveToggle product={product} saved={saved} />
+						)}
 						showSwatches={false}
 						locale={locale}
 						emptyState={

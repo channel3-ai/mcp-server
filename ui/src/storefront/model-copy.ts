@@ -29,7 +29,23 @@ export function toSyncedProduct(product: SyncSource): SyncedProduct {
 	};
 }
 
+export function toSyncedProductStub(product: {
+	id: string;
+	title: string;
+	brand?: string;
+}): SyncedProduct {
+	return { id: product.id, title: product.title, brand: product.brand, offerCount: 0 };
+}
+
+function pushNumberedProductLines(lines: string[], products: { id: string; title: string }[]) {
+	products.forEach((p, index) => {
+		lines.push(`${index + 1}. "${p.title}" [id: ${p.id}]`);
+	});
+}
+
 const MAX_RESULT_SETS = 4;
+
+const MAX_SAVED_LINES = 15;
 
 function attributeLabel(handle: string): string {
 	return handle.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
@@ -209,9 +225,24 @@ export function buildContextReport(self: PresenceRecord, peers: PresenceRecord[]
 	}
 	if (delta.length > 0) {
 		lines.push("Loaded by scrolling beyond the search results above:");
-		delta.forEach((p, index) => {
-			lines.push(`${index + 1}. "${p.title}" [id: ${p.id}]`);
-		});
+		pushNumberedProductLines(lines, delta);
+		lines.push("");
+	}
+
+	const saved = self.saved;
+	if (saved.length > 0) {
+		lines.push(
+			`Saved products (${saved.length}) — "my saved" or "compare these" resolve to this list; call get_products with these IDs to fetch or compare:`,
+		);
+		pushNumberedProductLines(lines, saved.slice(0, MAX_SAVED_LINES));
+		if (saved.length > MAX_SAVED_LINES) {
+			lines.push(
+				`…and ${saved.length - MAX_SAVED_LINES} more: ${saved
+					.slice(MAX_SAVED_LINES)
+					.map((p) => p.id)
+					.join(", ")}`,
+			);
+		}
 		lines.push("");
 	}
 
@@ -225,6 +256,7 @@ export function buildContextReport(self: PresenceRecord, peers: PresenceRecord[]
 		"app: channel3-storefront",
 		`result-sets: ${shown.length}`,
 		`focused-product: ${primaryFocus ? primaryFocus.id : "none"}`,
+		`saved-count: ${saved.length}`,
 		"---",
 		"",
 		hint,

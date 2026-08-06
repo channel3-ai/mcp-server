@@ -19,6 +19,7 @@ export interface ProductGridProps extends Omit<React.ComponentProps<"div">, "onS
 	onSelectVariant?: (product: ProductDetail, value: OptionValue) => void;
 	/** Forwarded to each {@link ProductCard}; show color swatches below the price. */
 	showSwatches?: boolean;
+	cardAction?: (product: ProductDetail) => React.ReactNode;
 	/** Show skeleton placeholders instead of products. */
 	loading?: boolean;
 	/** Number of skeletons to render while loading. */
@@ -39,6 +40,7 @@ export function ProductGrid({
 	onSelect,
 	onPreload,
 	onSelectVariant,
+	cardAction,
 	showSwatches = true,
 	loading = false,
 	skeletonCount = 8,
@@ -81,19 +83,30 @@ export function ProductGrid({
 
 	return (
 		<div data-slot="product-grid" className={gridClass} {...props}>
-			{products.map((product, index) => (
-				<ProductCard
-					key={product.id}
-					product={product}
-					href={getHref?.(product)}
-					onSelect={onSelect}
-					onPreload={onPreload}
-					onSelectVariant={onSelectVariant}
-					showSwatches={showSwatches}
-					priority={index < PRIORITY_COUNT}
-					locale={locale}
-				/>
-			))}
+			{products.map((product, index) => {
+				const card = (
+					<ProductCard
+						key={product.id}
+						product={product}
+						href={getHref?.(product)}
+						onSelect={onSelect}
+						onPreload={onPreload}
+						onSelectVariant={onSelectVariant}
+						showSwatches={showSwatches}
+						priority={index < PRIORITY_COUNT}
+						locale={locale}
+					/>
+				);
+				if (!cardAction) {
+					return card;
+				}
+				return (
+					<div key={product.id} className="relative h-full">
+						{card}
+						{cardAction(product)}
+					</div>
+				);
+			})}
 		</div>
 	);
 }

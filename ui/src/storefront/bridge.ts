@@ -29,6 +29,7 @@ export interface StorefrontBridge {
 	openLink(url: string): Promise<void>;
 	requestFullscreen(): Promise<boolean>;
 	requestInline(): Promise<void>;
+	sendChatMessage(text: string): Promise<void>;
 	syncContext(text: string): void;
 }
 
@@ -125,6 +126,10 @@ export class AppBridge implements StorefrontBridge {
 			return;
 		}
 		await this.app.requestDisplayMode({ mode: "inline" });
+	}
+
+	async sendChatMessage(text: string): Promise<void> {
+		await this.app.sendMessage({ role: "user", content: [{ type: "text", text }] });
 	}
 
 	syncContext(text: string): void {

@@ -72,6 +72,14 @@ body {
 	border-radius: 0;
 }
 
+@utility scrollbar-hidden {
+	scrollbar-width: none;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
+}
+
 :root[data-theme="dark"] {
 	--fb-background: oklch(0.141 0.005 285.823);
 	--fb-foreground: oklch(0.985 0 0);

@@ -138,7 +138,7 @@ export function ImageGallery({ images, previewSrc, className, ...props }: ImageG
 			</div>
 
 			{multiple ? (
-				<div className="flex items-start gap-2 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
+				<div className="scrollbar-hidden flex items-start gap-2 overflow-x-auto">
 					{images.map((image, index) => (
 						<button
 							key={`thumb-${image.url}-${index}`}

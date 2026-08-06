@@ -27,7 +27,7 @@ export function propsFromRequest(env: Bindings, request: Request): Props {
 	};
 }
 
-export function createServer(env: Bindings, request: Request, analytics: Analytics) {
+export async function createServer(env: Bindings, request: Request, analytics: Analytics) {
 	const url = new URL(request.url);
 	const origin = url.origin;
 	const props = analytics.props;
@@ -71,6 +71,8 @@ export function createServer(env: Bindings, request: Request, analytics: Analyti
 	const ctx: ToolContext = { props, env, origin, analytics };
 	registerTools(server, ctx);
 	registerPrompts(server);
-	registerStorefrontResource(server);
+	// Claude's hash input is the bare origin with its original scheme — TLS terminates upstream, and Claude strips trailing slashes (anthropics/claude-ai-mcp#234).
+	const proto = request.headers.get("x-forwarded-proto") ?? url.protocol.replace(/:$/, "");
+	await registerStorefrontResource(server, `${proto}://${url.host}`);
 	return server;
 }

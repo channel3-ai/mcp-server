@@ -21,7 +21,10 @@ import {
 import type { VariantResolver } from "@/registry/default/hooks/use-variant-selection";
 import { useVariantSelection } from "@/registry/default/hooks/use-variant-selection";
 import type { StorefrontBridge } from "@/storefront/bridge";
+import { detailQueryOptions } from "@/storefront/detail-query";
+import { ProductSaveToggle } from "@/storefront/save-toggle";
 import type { PriceFocusStats } from "@/storefront/types";
+import type { SavedProducts } from "@/storefront/use-saved-products";
 
 export interface DetailFocus {
 	product: ProductDetail;
@@ -31,6 +34,7 @@ export interface DetailFocus {
 export function DetailView({
 	product: initialProduct,
 	bridge,
+	saved,
 	onSelect,
 	onBack,
 	onFocusChange,
@@ -38,16 +42,14 @@ export function DetailView({
 }: {
 	product: ProductDetail;
 	bridge: StorefrontBridge;
+	saved: SavedProducts;
 	onSelect: (product: ProductDetail) => void;
 	onBack?: () => void;
 	onFocusChange?: (focus: DetailFocus) => void;
 	locale?: string;
 }) {
 	const queryClient = useQueryClient();
-	const details = useQuery({
-		queryKey: ["details", initialProduct.id],
-		queryFn: () => bridge.getProduct(initialProduct.id),
-	});
+	const details = useQuery(detailQueryOptions(bridge, initialProduct.id));
 	const priceHistoryQuery = useQuery({
 		queryKey: ["price-history", initialProduct.id],
 		queryFn: () => bridge.getPriceHistory(initialProduct.id),
@@ -62,10 +64,7 @@ export function DetailView({
 		({ product, value }) => {
 			const productId = value.product_id;
 			return productId
-				? queryClient.fetchQuery({
-						queryKey: ["details", productId],
-						queryFn: () => bridge.getProduct(productId),
-					})
+				? queryClient.fetchQuery(detailQueryOptions(bridge, productId))
 				: Promise.resolve(product);
 		},
 		[bridge, queryClient],
@@ -133,13 +132,18 @@ export function DetailView({
 	return (
 		<div className="flex min-h-full flex-col gap-2 p-4">
 			{onBack ? (
-				<div className="flex items-center">
+				<div>
 					<Button variant="ghost" size="icon" aria-label="Back" onClick={onBack}>
 						<ArrowLeft className="size-4" />
 					</Button>
 				</div>
 			) : null}
-			<div onClickCapture={interceptLinks} aria-busy={hydrating || isResolving}>
+			<div
+				onClickCapture={interceptLinks}
+				aria-busy={hydrating || isResolving}
+				className="relative"
+			>
+				<ProductSaveToggle product={product} saved={saved} />
 				<ProductDetailsRoot
 					product={product}
 					selection={selection}
