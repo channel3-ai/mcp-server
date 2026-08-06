@@ -13,6 +13,7 @@ import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { setAnalyticsTarget, trackEvent } from "@/storefront/analytics";
 import {
 	AppBridge,
 	type BrowsePage,
@@ -23,6 +24,7 @@ import { browseQueryOptions } from "@/storefront/browse-query";
 import { BrowseGridSkeleton, BrowseView } from "@/storefront/browse-view";
 import { type DetailFocus, DetailView } from "@/storefront/detail-view";
 import { detailQueryOptions } from "@/storefront/detail-query";
+import { setThreadId } from "@/storefront/identity";
 import { InlineError, InlineResults, InlineSearchSkeleton } from "@/storefront/inline-views";
 import { type ResultSetPresence, usePresence } from "@/storefront/instance-presence";
 import { buildContextReport, toFocusContext, toSyncedProduct } from "@/storefront/model-copy";
@@ -250,9 +252,20 @@ function useModelDrivenState() {
 			return;
 		}
 		const result = parsed.data as MountResult;
+		setAnalyticsTarget(result.server_origin, result.session_id);
+		if (result.thread_id) {
+			setThreadId(result.thread_id);
+		}
 		const asOf = result.as_of ? Date.parse(result.as_of) : Number.NaN;
 		if (Number.isFinite(asOf)) {
 			setOrderKey({ asOf, seq: result.seq ?? 0 });
+		}
+		if (result.query || result.image_url) {
+			trackEvent("search_initiated", {
+				query: result.query,
+				image_url: result.image_url,
+				result_count: result.products.length,
+			});
 		}
 		dispatch({
 			type: "result",
@@ -269,6 +282,11 @@ function useModelDrivenState() {
 
 	const openDetail = React.useCallback(
 		(product: ProductDetail, origin: DetailOrigin = "search") => {
+			trackEvent("product_clicked", {
+				product_id: product.id,
+				title: product.title,
+				origin,
+			});
 			dispatch({ type: "openDetail", product, origin });
 		},
 		[],
@@ -545,6 +563,7 @@ function StorefrontCore({
 
 	const compareSaved = React.useCallback(() => {
 		const ids = saved.syncedSaved.map((p) => p.id);
+		trackEvent("compare_requested", { product_ids: ids, count: ids.length });
 		bridge
 			.sendChatMessage(
 				`Compare the products I saved: ${ids.join(", ")} - call get_products with these IDs and give me a personalized comparison between them.`,

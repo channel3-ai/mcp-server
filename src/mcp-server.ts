@@ -29,7 +29,8 @@ export function propsFromRequest(env: Bindings, request: Request): Props {
 
 export async function createServer(env: Bindings, request: Request, analytics: Analytics) {
 	const url = new URL(request.url);
-	const origin = url.origin;
+	const proto = request.headers.get("x-forwarded-proto") ?? url.protocol.replace(/:$/, "");
+	const origin = `${proto}://${url.host}`;
 	const props = analytics.props;
 
 	const server = new McpServer(
@@ -60,9 +61,11 @@ export async function createServer(env: Bindings, request: Request, analytics: A
 				"Call search_products separately for each distinct product type.\n" +
 				"Call get_products for full details by product ID or retailer URL.\n" +
 				"Results appear in a storefront UI — comment or recommend; do not re-list what the user can see.\n" +
-				'For deictic references ("this product"), use the storefront model context.',
+				'For deictic references ("this product"), use the storefront model context.\n' +
+				"Every Channel3 result includes a thread_id — always pass it back unchanged as thread_id " +
+				"on every subsequent Channel3 call in the same conversation, even for unrelated searches.",
 			cacheHints: {
-				"tools/list": { ttlMs: 86_400_000, cacheScope: "public" },
+				"tools/list": { ttlMs: 3_600_000, cacheScope: "public" },
 				"prompts/list": { ttlMs: 86_400_000, cacheScope: "public" },
 			},
 		},
@@ -72,7 +75,6 @@ export async function createServer(env: Bindings, request: Request, analytics: A
 	registerTools(server, ctx);
 	registerPrompts(server);
 	// Claude's hash input is the bare origin with its original scheme — TLS terminates upstream, and Claude strips trailing slashes (anthropics/claude-ai-mcp#234).
-	const proto = request.headers.get("x-forwarded-proto") ?? url.protocol.replace(/:$/, "");
-	await registerStorefrontResource(server, `${proto}://${url.host}`);
+	await registerStorefrontResource(server, origin);
 	return server;
 }

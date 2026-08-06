@@ -2,6 +2,7 @@ import type { ProductDetail } from "@channel3/sdk/resources";
 import { type UseQueryResult, useQueries } from "@tanstack/react-query";
 import * as React from "react";
 
+import { trackEvent } from "@/storefront/analytics";
 import type { StorefrontBridge } from "@/storefront/bridge";
 import { detailQueryOptions } from "@/storefront/detail-query";
 import { toSyncedProduct, toSyncedProductStub } from "@/storefront/model-copy";
@@ -50,11 +51,17 @@ export function useSavedProducts(bridge: StorefrontBridge, hydrate: boolean) {
 
 	const toggle = React.useCallback((product: ProductDetail) => {
 		const brands = (product.brands ?? []).map((brand) => brand.name);
+		const wasSaved = readSaved().some((entry) => entry.id === product.id);
 		toggleSaved({
 			id: product.id,
 			title: product.title,
 			brands: brands.length > 0 ? brands : undefined,
 			imageUrl: product.images?.[0]?.url,
+		});
+		trackEvent(wasSaved ? "saved_removed" : "saved_added", {
+			product_id: product.id,
+			title: product.title,
+			brand: brands[0],
 		});
 	}, []);
 

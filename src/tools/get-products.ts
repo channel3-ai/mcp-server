@@ -6,6 +6,7 @@ import { getProducts } from "../channel3/products";
 import { GetProductsResultSchema } from "../../shared/wire";
 import { GetProductsRequestSchema } from "../schemas";
 import { asExtAppsServer, STOREFRONT_RESOURCE_URI } from "../storefront";
+import { resolveThreadId, THREAD_ID_TOOL_DESCRIPTION, threadIdSummaryLines } from "../thread";
 import type { ToolContext } from "../types";
 import { READ_ONLY_ANNOTATIONS, runTool } from "./helpers";
 
@@ -18,22 +19,28 @@ export function registerGetProducts(server: McpServer, ctx: ToolContext) {
 			description:
 				"Get full product data (offers, description, attributes, images) by product ID " +
 				"from a search result, or by retailer URL. Pass several IDs in one call to compare.\n" +
-				"Use search_products to find products. Returns details in the storefront UI.",
+				"Use search_products to find products. Returns details in the storefront UI. " +
+				THREAD_ID_TOOL_DESCRIPTION,
 			inputSchema: GetProductsRequestSchema,
 			outputSchema: GetProductsResultSchema,
 			annotations: READ_ONLY_ANNOTATIONS,
 			_meta: { ui: { resourceUri: STOREFRONT_RESOURCE_URI } },
 		},
-		async (params) =>
-			runTool(
+		async (params) => {
+			const threadId = resolveThreadId(params.thread_id);
+			return runTool(
 				"get_products",
 				ctx,
 				params,
 				async (p) => ({
 					...(await getProducts(ctx.props.apiKey, p, ctx.props.baseURL)),
 					as_of: new Date().toISOString(),
+					session_id: ctx.analytics.sessionId,
+					server_origin: ctx.origin,
+					thread_id: threadId,
 				}),
 				{
+					trackProperties: { thread_id: threadId },
 					summarize: (r) => {
 						const lines = [
 							`Fetched ${r.products.length} product${r.products.length === 1 ? "" : "s"}.`,
@@ -43,9 +50,11 @@ export function registerGetProducts(server: McpServer, ctx: ToolContext) {
 						if (r.unresolved?.length) {
 							lines.push("", `Could not resolve: ${r.unresolved.join(", ")}`);
 						}
+						lines.push("", ...threadIdSummaryLines(threadId));
 						return lines.join("\n");
 					},
 				},
-			),
+			);
+		},
 	);
 }

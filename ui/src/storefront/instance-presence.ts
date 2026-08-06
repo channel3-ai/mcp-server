@@ -1,24 +1,13 @@
 import { BroadcastChannel as ElectionChannel, createLeaderElection } from "broadcast-channel";
 import * as React from "react";
 
+import { getOrCreateId } from "@/storefront/storage";
 import type { OrderKey, SyncedProduct, ViewingContext } from "@/storefront/types";
 
 const SCOPE_STORAGE_KEY = "channel3-storefront:presence-scope";
 
 // ui.domain makes the origin span conversations; a per-tab key (sessionStorage) keeps presence inside one chat.
-function presenceScope(): string {
-	try {
-		const existing = sessionStorage.getItem(SCOPE_STORAGE_KEY);
-		if (existing) return existing;
-		const created = crypto.randomUUID();
-		sessionStorage.setItem(SCOPE_STORAGE_KEY, created);
-		return created;
-	} catch {
-		return "default";
-	}
-}
-
-const SCOPE = presenceScope();
+const SCOPE = getOrCreateId(sessionStorage, SCOPE_STORAGE_KEY, () => "default");
 const PRESENCE_CHANNEL = `channel3-storefront-presence:${SCOPE}`;
 const ELECTION_CHANNEL = `channel3-storefront-election:${SCOPE}`;
 const ACTIVATION_BROADCAST_INTERVAL_MS = 250;

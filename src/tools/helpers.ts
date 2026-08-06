@@ -53,6 +53,7 @@ async function trackToolCall(
 	params: unknown,
 	durationMs: number,
 	outcome: ToolOutcome,
+	properties?: Record<string, unknown>,
 ): Promise<void> {
 	const error = "error" in outcome ? outcome.error : undefined;
 	logToolCall(
@@ -68,12 +69,14 @@ async function trackToolCall(
 		parameters: params,
 		durationMs,
 		isError: Boolean(error),
+		...(properties ? { properties } : {}),
 		...("error" in outcome ? { error: outcome.error } : { response: outcome.response }),
 	});
 }
 
 interface RunToolOptions<P, R> {
 	summarize?: (result: R, params: P) => string;
+	trackProperties?: Record<string, unknown>;
 }
 
 export async function runTool<P, R extends Record<string, unknown>>(
@@ -86,9 +89,14 @@ export async function runTool<P, R extends Record<string, unknown>>(
 	const start = Date.now();
 	try {
 		const structuredContent = await handler(params);
-		await trackToolCall(toolName, ctx, params, Date.now() - start, {
-			response: structuredContent,
-		});
+		await trackToolCall(
+			toolName,
+			ctx,
+			params,
+			Date.now() - start,
+			{ response: structuredContent },
+			options?.trackProperties,
+		);
 		return {
 			content: [
 				{
@@ -101,7 +109,14 @@ export async function runTool<P, R extends Record<string, unknown>>(
 			structuredContent,
 		};
 	} catch (err: unknown) {
-		await trackToolCall(toolName, ctx, params, Date.now() - start, { error: err });
+		await trackToolCall(
+			toolName,
+			ctx,
+			params,
+			Date.now() - start,
+			{ error: err },
+			options?.trackProperties,
+		);
 		return errorResponse(err);
 	}
 }

@@ -20,6 +20,7 @@ import {
 } from "@/registry/default/components/product-details";
 import type { VariantResolver } from "@/registry/default/hooks/use-variant-selection";
 import { useVariantSelection } from "@/registry/default/hooks/use-variant-selection";
+import { trackEvent } from "@/storefront/analytics";
 import type { StorefrontBridge } from "@/storefront/bridge";
 import { detailQueryOptions } from "@/storefront/detail-query";
 import { ProductSaveToggle } from "@/storefront/save-toggle";
@@ -92,6 +93,17 @@ export function DetailView({
 		});
 	}, [product, stats, onFocusChange]);
 
+	const trackedViewRef = React.useRef<string | null>(null);
+	React.useEffect(() => {
+		if (trackedViewRef.current === product.id) return;
+		trackedViewRef.current = product.id;
+		trackEvent("pdp_viewed", {
+			product_id: product.id,
+			title: product.title,
+			brand: product.brands?.[0]?.name,
+		});
+	}, [product]);
+
 	const fetchSimilar = React.useCallback(
 		({ productId, limit }: { productId: string; limit: number }) =>
 			bridge.getSimilar(productId, limit),
@@ -107,6 +119,11 @@ export function DetailView({
 		event.stopPropagation();
 		const url = anchor.getAttribute("href");
 		if (url) {
+			trackEvent("buy_link_clicked", {
+				product_id: product.id,
+				title: product.title,
+				url,
+			});
 			void bridge.openLink(url);
 		}
 	};
@@ -148,7 +165,17 @@ export function DetailView({
 					product={product}
 					selection={selection}
 					onSelectVariant={select}
-					onOfferClick={(offer) => void bridge.openLink(offer.url)}
+					onOfferClick={(offer) => {
+						trackEvent("buy_link_clicked", {
+							product_id: product.id,
+							title: product.title,
+							url: offer.url,
+							domain: offer.domain,
+							price: offer.price.price,
+							currency: offer.price.currency,
+						});
+						void bridge.openLink(offer.url);
+					}}
 					buyLinkRel="sponsored noopener noreferrer"
 					priceHistory={priceHistoryQuery.data}
 					isResolving={isResolving || hydrating}
