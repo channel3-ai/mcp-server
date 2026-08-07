@@ -147,7 +147,7 @@ export function DetailView({
 	}
 
 	return (
-		<div className="flex min-h-full flex-col gap-2 p-4">
+		<div className="flex min-h-full flex-col gap-2 p-4 transition-opacity duration-200 ease-out starting:opacity-0">
 			{onBack ? (
 				<div>
 					<Button variant="ghost" size="icon" aria-label="Back" onClick={onBack}>

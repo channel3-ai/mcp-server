@@ -58,7 +58,7 @@ export function InlineResults({
 	locale?: string;
 }) {
 	return (
-		<div className="flex flex-col gap-3">
+		<div className="flex flex-col gap-3 transition-opacity duration-200 ease-out starting:opacity-0">
 			<div className="flex items-center justify-end gap-2">
 				{saved.count > 0 ? (
 					<button
