@@ -1,3 +1,4 @@
+import { APIError } from "@channel3/sdk";
 import type { z } from "zod";
 
 import type { GetProductsRequestSchema, SearchRequestSchema } from "../schemas";
@@ -10,6 +11,13 @@ export interface SearchPageInput {
 	image_url?: string;
 	page_token?: string;
 	limit: number;
+}
+
+export function isExhaustedPageTokenError(err: unknown): boolean {
+	return (
+		err instanceof APIError &&
+		(err.status === 410 || (err.status === 400 && err.message.includes("page_token")))
+	);
 }
 
 export function searchProductsPage(client: Channel3Client, params: SearchPageInput) {

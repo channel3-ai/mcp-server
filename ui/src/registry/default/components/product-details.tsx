@@ -16,6 +16,7 @@ import {
 	isInStock,
 	isOnSale,
 	leadOffer,
+	preferCleanedImages,
 } from "@/registry/default/lib/format";
 
 type OptionValue = ProductDetail.Variants.Option.Value;
@@ -156,7 +157,7 @@ function Gallery({ className, ...rest }: React.ComponentProps<"div">) {
 	const { product, variantPreview } = useProductDetails("ProductDetailsGallery");
 	return (
 		<ImageGallery
-			images={product.images ?? []}
+			images={preferCleanedImages(product.images)}
 			previewSrc={variantPreview?.thumbnail_url ?? null}
 			className={className}
 			{...rest}

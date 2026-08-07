@@ -18,16 +18,27 @@ function cdnImages<T extends { url: string }>(images: T[] | undefined): T[] | un
 	return images?.filter(isCdnImage);
 }
 
-function summaryImage(product: ProductDetail): ProductImage | undefined {
+function withCleanedDisplayUrl(image: ProductImage): ProductImage {
+	return image.cleaned_url ? { ...image, url: image.cleaned_url } : image;
+}
+
+function summaryImages(product: ProductDetail): ProductImage[] {
 	const images = cdnImages(product.images as ProductImage[] | undefined);
 	if (!images?.length) {
-		return undefined;
+		return [];
 	}
-	const cleaned = images.find((image) => image.cleaned_url || image.is_cleaned_image);
-	if (cleaned) {
-		return cleaned.cleaned_url ? { ...cleaned, url: cleaned.cleaned_url } : cleaned;
-	}
-	return images.find((image) => image.is_main_image) ?? images[0];
+	const primarySource =
+		images.find((image) => image.cleaned_url || image.is_cleaned_image) ??
+		images.find((image) => image.is_main_image) ??
+		images[0];
+	const primary = withCleanedDisplayUrl(primarySource);
+	const second = images.find(
+		(image) =>
+			image !== primarySource &&
+			image.url !== primary.url &&
+			image.cleaned_url !== primary.url,
+	);
+	return second ? [primary, withCleanedDisplayUrl(second)] : [primary];
 }
 
 export function formatOffer(offer: ProductOffer) {
@@ -40,12 +51,11 @@ export function formatOffers(offers: ProductOffer[] | undefined) {
 }
 
 export function formatProductSummary(product: ProductDetail) {
-	const image = summaryImage(product);
 	return {
 		id: product.id,
 		title: product.title,
 		brands: product.brands,
-		images: image ? [image] : [],
+		images: summaryImages(product),
 		offers: formatOffers(product.offers),
 	};
 }

@@ -2,6 +2,7 @@ import type { ProductDetail } from "@channel3/sdk/resources";
 import { type UseQueryResult, useQueries } from "@tanstack/react-query";
 import * as React from "react";
 
+import { pickImage } from "@/registry/default/lib/format";
 import { trackEvent } from "@/storefront/analytics";
 import type { StorefrontBridge } from "@/storefront/bridge";
 import { detailQueryOptions } from "@/storefront/detail-query";
@@ -75,7 +76,7 @@ export function useSavedProducts(bridge: StorefrontBridge, hydrate: boolean) {
 			id: product.id,
 			title: product.title,
 			brands: brands.length > 0 ? brands : undefined,
-			imageUrl: product.images?.[0]?.url,
+			imageUrl: pickImage(product.images, { preferCleaned: true })?.url,
 		});
 		if (change) {
 			trackEvent(change.type === "added" ? "saved_added" : "saved_removed", {
