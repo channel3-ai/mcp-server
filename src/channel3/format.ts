@@ -3,6 +3,13 @@ import type { ProductDetail, ProductOffer } from "./client";
 
 const CDN_IMAGE_PREFIX = "https://cdn.trychannel3.com/";
 
+type ProductImage = {
+	url: string;
+	cleaned_url?: string | null;
+	is_cleaned_image?: boolean;
+	is_main_image?: boolean;
+};
+
 function isCdnImage(image: { url: string }): boolean {
 	return image.url.startsWith(CDN_IMAGE_PREFIX);
 }
@@ -11,13 +18,17 @@ function cdnImages<T extends { url: string }>(images: T[] | undefined): T[] | un
 	return images?.filter(isCdnImage);
 }
 
-function summaryImage(product: ProductDetail) {
-	const images = cdnImages(product.images);
-	return (
-		images?.find((i) => i.is_cleaned_image) ??
-		images?.find((i) => i.is_main_image) ??
-		images?.[0]
-	);
+
+function summaryImage(product: ProductDetail): ProductImage | undefined {
+	const images = cdnImages(product.images as ProductImage[] | undefined);
+	if (!images?.length) {
+		return undefined;
+	}
+	const cleaned = images.find((image) => image.cleaned_url || image.is_cleaned_image);
+	if (cleaned) {
+		return cleaned.cleaned_url ? { ...cleaned, url: cleaned.cleaned_url } : cleaned;
+	}
+	return images.find((image) => image.is_main_image) ?? images[0];
 }
 
 export function formatOffer(offer: ProductOffer) {
