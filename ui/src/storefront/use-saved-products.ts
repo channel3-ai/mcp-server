@@ -8,6 +8,7 @@ import { detailQueryOptions } from "@/storefront/detail-query";
 import { toSyncedProduct, toSyncedProductStub } from "@/storefront/model-copy";
 import {
 	readSaved,
+	removeSaved,
 	SAVED_CAP,
 	type SavedEntry,
 	subscribeSaved,
@@ -25,8 +26,27 @@ export interface SavedItem {
 
 export function useSavedProducts(bridge: StorefrontBridge, hydrate: boolean) {
 	const [entries, setEntries] = React.useState<SavedEntry[]>(() => readSaved());
+	const [lastAdded, setLastAdded] = React.useState<{ id: string; at: number } | null>(null);
 
-	React.useEffect(() => subscribeSaved(() => setEntries(readSaved())), []);
+	React.useEffect(
+		() =>
+			subscribeSaved((change) => {
+				const next = readSaved();
+				setEntries((prev) =>
+					prev.length === next.length &&
+					prev.every(
+						(entry, index) =>
+							entry.id === next[index].id && entry.savedAt === next[index].savedAt,
+					)
+						? prev
+						: next,
+				);
+				if (change?.type === "added") {
+					setLastAdded({ id: change.id, at: Date.now() });
+				}
+			}),
+		[],
+	);
 
 	const items = useQueries({
 		queries: entries.map((entry) => ({
@@ -51,18 +71,30 @@ export function useSavedProducts(bridge: StorefrontBridge, hydrate: boolean) {
 
 	const toggle = React.useCallback((product: ProductDetail) => {
 		const brands = (product.brands ?? []).map((brand) => brand.name);
-		const wasSaved = readSaved().some((entry) => entry.id === product.id);
-		toggleSaved({
+		const change = toggleSaved({
 			id: product.id,
 			title: product.title,
 			brands: brands.length > 0 ? brands : undefined,
 			imageUrl: product.images?.[0]?.url,
 		});
-		trackEvent(wasSaved ? "saved_removed" : "saved_added", {
-			product_id: product.id,
-			title: product.title,
-			brand: brands[0],
-		});
+		if (change) {
+			trackEvent(change.type === "added" ? "saved_added" : "saved_removed", {
+				product_id: product.id,
+				title: product.title,
+				brand: brands[0],
+			});
+		}
+	}, []);
+
+	const remove = React.useCallback((id: string) => {
+		const entry = removeSaved(id);
+		if (entry) {
+			trackEvent("saved_removed", {
+				product_id: id,
+				title: entry.title,
+				brand: entry.brands?.[0],
+			});
+		}
 	}, []);
 
 	const isSaved = React.useCallback(
@@ -88,7 +120,9 @@ export function useSavedProducts(bridge: StorefrontBridge, hydrate: boolean) {
 		items,
 		count: entries.length,
 		canSave: entries.length < SAVED_CAP,
+		lastAdded,
 		toggle,
+		remove,
 		isSaved,
 		syncedSaved,
 	};

@@ -1,5 +1,6 @@
 import type { ProductDetail } from "@channel3/sdk/resources";
-import { ArrowRight, BookmarkCheck } from "lucide-react";
+import { ArrowRight, Bookmark } from "lucide-react";
+import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -57,6 +58,15 @@ export function InlineResults({
 	onPrefetchProduct?: (product: ProductDetail) => void;
 	locale?: string;
 }) {
+	const [bumpKey, setBumpKey] = React.useState(0);
+	const prevCountRef = React.useRef(saved.count);
+	React.useEffect(() => {
+		if (saved.count > prevCountRef.current) {
+			setBumpKey((key) => key + 1);
+		}
+		prevCountRef.current = saved.count;
+	}, [saved.count]);
+
 	return (
 		<div className="flex flex-col gap-3 starting:opacity-0 transition-opacity duration-200 ease-out">
 			<div className="flex items-center justify-end gap-2">
@@ -67,8 +77,13 @@ export function InlineResults({
 						aria-label={`Show saved products (${saved.count})`}
 						className="relative flex items-center gap-1 p-1 text-muted-foreground text-sm transition-colors before:absolute before:-inset-1 before:content-[''] hover:text-foreground"
 					>
-						<BookmarkCheck className="size-4" />
-						<span className="tabular-nums">{saved.count}</span>
+						<Bookmark className="size-4 fill-current" />
+						<span
+							key={bumpKey}
+							className={cn("tabular-nums", bumpKey > 0 && "animate-count-bump")}
+						>
+							{saved.count}
+						</span>
 					</button>
 				) : null}
 				<Button variant="outline" size="sm" onClick={onBrowseAll}>

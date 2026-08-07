@@ -23,7 +23,7 @@ import { trackEvent } from "@/storefront/analytics";
 import type { StorefrontBridge } from "@/storefront/bridge";
 import { detailQueryOptions } from "@/storefront/detail-query";
 import { PriceChart } from "@/storefront/price-chart";
-import { ProductSaveToggle } from "@/storefront/save-toggle";
+import { ProductSaveRow } from "@/storefront/save-toggle";
 import type { PriceFocusStats } from "@/storefront/types";
 import type { SavedProducts } from "@/storefront/use-saved-products";
 
@@ -155,12 +155,7 @@ export function DetailView({
 					</Button>
 				</div>
 			) : null}
-			<div
-				onClickCapture={interceptLinks}
-				aria-busy={hydrating || isResolving}
-				className="relative"
-			>
-				<ProductSaveToggle product={product} saved={saved} />
+			<div onClickCapture={interceptLinks} aria-busy={hydrating || isResolving}>
 				<ProductDetailsRoot
 					product={product}
 					selection={selection}
@@ -181,7 +176,7 @@ export function DetailView({
 					isResolving={isResolving || hydrating}
 					locale={locale}
 					fetchSimilar={fetchSimilar}
-					recommendations={{ showSwatches: false, onSelect }}
+					recommendations={{ showSwatches: false, eager: true, onSelect }}
 				>
 					<div className="flex flex-col gap-12">
 						<div className="grid gap-8 md:grid-cols-2 md:items-start lg:gap-12">
@@ -189,6 +184,7 @@ export function DetailView({
 							<div className="flex flex-col gap-6">
 								<ProductDetailsHeader />
 								<ProductDetailsVariants />
+								<ProductSaveRow product={product} saved={saved} />
 								<ProductDetailsOffers />
 								<ProductDetailsDescription />
 								<ProductDetailsAttributes />

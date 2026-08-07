@@ -4,5 +4,6 @@ export function detailQueryOptions(bridge: StorefrontBridge, id: string) {
 	return {
 		queryKey: ["details", id] as const,
 		queryFn: () => bridge.getProduct(id),
+		staleTime: 5 * 60_000,
 	};
 }

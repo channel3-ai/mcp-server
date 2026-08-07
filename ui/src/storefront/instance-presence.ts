@@ -110,9 +110,16 @@ export function usePresence(input: PresenceInput): PresenceState {
 		const peerMap = peersRef.current;
 		peerMap.clear();
 		const channel = new BroadcastChannel(PRESENCE_CHANNEL);
+		let lastSelfKey: string | null = null;
+		let lastPeersKey: string | null = null;
 
 		const recount = () => {
-			setSelfState(buildSelf());
+			const nextSelf = buildSelf();
+			const selfKey = JSON.stringify(nextSelf);
+			if (selfKey !== lastSelfKey) {
+				lastSelfKey = selfKey;
+				setSelfState(nextSelf);
+			}
 			const now = Date.now();
 			const livePeers: PresenceRecord[] = [];
 			for (const [id, entry] of peerMap) {
@@ -122,7 +129,11 @@ export function usePresence(input: PresenceInput): PresenceState {
 				}
 				livePeers.push(entry.presence);
 			}
-			setPeers(livePeers);
+			const peersKey = JSON.stringify(livePeers);
+			if (peersKey !== lastPeersKey) {
+				lastPeersKey = peersKey;
+				setPeers(livePeers);
+			}
 		};
 
 		const post = (type: PresenceMessage["type"]) => {
