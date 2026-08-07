@@ -1,5 +1,5 @@
 import type { ProductDetail } from "@channel3/sdk/resources";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,11 @@ import { cn } from "@/lib/utils";
 import { ProductGrid } from "@/registry/default/components/product-grid";
 import { useInViewport } from "@/registry/default/hooks/use-in-viewport";
 import type { StorefrontBridge } from "@/storefront/bridge";
-import { browseQueryOptions } from "@/storefront/browse-query";
+import {
+	browseFirstPageData,
+	browseQueryOptions,
+	seedBrowseFirstPage,
+} from "@/storefront/browse-query";
 import { ProductSaveToggle } from "@/storefront/save-toggle";
 import type { SavedProducts } from "@/storefront/use-saved-products";
 
@@ -55,13 +59,28 @@ export function BrowseView({
 		getNextPageParam: (last) => last.nextPageToken ?? undefined,
 		enabled: criteria,
 		initialData: initialResults?.length
-			? {
-					pages: [{ products: initialResults, nextPageToken: initialNextPageToken }],
-					pageParams: [undefined],
-				}
+			? browseFirstPageData({ products: initialResults, nextPageToken: initialNextPageToken })
 			: undefined,
 		placeholderData: (previous) => previous,
 	});
+
+	const queryClient = useQueryClient();
+	const seededResults = React.useRef(initialResults);
+	React.useEffect(() => {
+		if (seededResults.current === initialResults) {
+			return;
+		}
+		seededResults.current = initialResults;
+		if (!initialResults?.length) {
+			return;
+		}
+		seedBrowseFirstPage(
+			queryClient,
+			bridge,
+			{ query: initialQuery, imageUrl: initialImageUrl },
+			{ products: initialResults, nextPageToken: initialNextPageToken },
+		);
+	}, [bridge, queryClient, initialQuery, initialImageUrl, initialResults, initialNextPageToken]);
 	const results = React.useMemo(
 		() => search.data?.pages.flatMap((page) => page.products) ?? [],
 		[search.data],

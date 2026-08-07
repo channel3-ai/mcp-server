@@ -173,3 +173,46 @@ body {
 	--chart-4: oklch(0.713 0.143 254.624);
 	--chart-5: oklch(0.704 0.191 22.216);
 }
+
+@keyframes save-pop {
+	0% {
+		transform: scale(0.6);
+	}
+	60% {
+		transform: scale(1.25);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+@utility animate-save-pop {
+	animation: save-pop 250ms ease-out;
+}
+
+@keyframes count-bump {
+	0% {
+		transform: scale(1.5);
+		color: var(--primary);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+
+@utility animate-count-bump {
+	animation: count-bump 300ms var(--ease-out-strong);
+}
+
+@keyframes highlight-fade {
+	0% {
+		background-color: color-mix(in oklab, var(--primary) 14%, transparent);
+	}
+	100% {
+		background-color: transparent;
+	}
+}
+
+@utility animate-highlight-fade {
+	animation: highlight-fade 1.4s ease-out 250ms backwards;
+}

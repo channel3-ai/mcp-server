@@ -13,6 +13,7 @@ import * as React from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useLatestRequest } from "@/registry/default/hooks/use-latest-request";
 import { setAnalyticsTarget, trackEvent } from "@/storefront/analytics";
 import {
 	AppBridge,
@@ -56,6 +57,8 @@ type ToolResultParams = McpUiToolResultNotification["params"];
 
 const REMOUNT_HEAL_DELAY_MS = 750;
 
+const HEAL_TWIN_WINDOW_MS = 10_000;
+
 const MAX_STACKED_RESULT_SETS = 4;
 
 const RELOAD_FAILURE_MESSAGE =
@@ -83,6 +86,7 @@ type ModelAction =
 	| { type: "error"; message: string }
 	| { type: "resultLost"; input: PendingSearch }
 	| { type: "cancelled" }
+	| { type: "acknowledge" }
 	| { type: "activate"; key: string }
 	| { type: "openDetail"; product: ProductDetail; origin: DetailOrigin }
 	| { type: "backDetail" }
@@ -101,6 +105,13 @@ const INITIAL_SCENE: ModelDrivenScene = {
 
 function searchKey(input: PendingSearch | null): string {
 	return input?.query || input?.imageUrl || "results";
+}
+
+function sameResultContent(set: SearchState, products: ProductDetail[]): boolean {
+	if (set.products.length !== products.length) {
+		return false;
+	}
+	return set.products.every((product, index) => product.id === products[index].id);
 }
 
 function activeSearch(state: {
@@ -151,6 +162,11 @@ function sceneReducer(state: ModelDrivenScene, action: ModelAction): ModelDriven
 			return { ...state, pending: null, lostResult: action.input };
 		case "cancelled":
 			return { ...state, pending: null, lostResult: null };
+		case "acknowledge":
+			if (!state.pending && !state.lostResult && !state.toolError) {
+				return state;
+			}
+			return { ...state, pending: null, lostResult: null, toolError: null };
 		case "openDetail": {
 			const current = state.scene === "detail" ? state.detail : null;
 			return {
@@ -216,6 +232,10 @@ function useModelDrivenState() {
 	const [orderKey, setOrderKey] = React.useState<OrderKey | null>(null);
 
 	const pendingRef = React.useRef<PendingSearch | null>(null);
+	const searchesRef = React.useRef(sceneState.searches);
+	searchesRef.current = sceneState.searches;
+	const { run: runHeal, cancel: cancelHeal } = useLatestRequest();
+	const healedKeyRef = React.useRef<{ key: string; at: number } | null>(null);
 
 	const onToolInput = React.useCallback(
 		(tool: string | undefined, args: Record<string, unknown> | undefined) => {
@@ -223,62 +243,88 @@ function useModelDrivenState() {
 			if (!input) {
 				return;
 			}
+			cancelHeal();
 			pendingRef.current = input;
 			dispatch({ type: "input", input });
 		},
-		[],
+		[cancelHeal],
 	);
 
-	const onToolResult = React.useCallback((params: ToolResultParams) => {
-		if (params.isError) {
-			pendingRef.current = null;
-			dispatch({
-				type: "error",
-				message: toolErrorText(params.content) ?? "The tool call failed.",
-			});
-			return;
-		}
-		// A host can deliver concurrent tool results to one instance, and the bridge
-		// identifies neither, so only the echoed criteria pair a result to its search.
-		const input = readSearchCriteria(params.structuredContent) ?? pendingRef.current;
-		pendingRef.current = null;
-		const parsed = MountResultSchema.safeParse(params.structuredContent);
-		if (!parsed.success) {
-			if (input && (input.query || input.imageUrl)) {
-				dispatch({ type: "resultLost", input });
-			} else if (input) {
-				dispatch({ type: "error", message: RELOAD_FAILURE_MESSAGE });
+	const onToolResult = React.useCallback(
+		(params: ToolResultParams) => {
+			cancelHeal();
+			if (params.isError) {
+				pendingRef.current = null;
+				dispatch({
+					type: "error",
+					message: toolErrorText(params.content) ?? "The tool call failed.",
+				});
+				return;
 			}
-			return;
-		}
-		const result = parsed.data as MountResult;
-		setAnalyticsTarget(result.server_origin, result.session_id);
-		if (result.thread_id) {
-			setThreadId(result.thread_id);
-		}
-		const asOf = result.as_of ? Date.parse(result.as_of) : Number.NaN;
-		if (Number.isFinite(asOf)) {
-			setOrderKey({ asOf, seq: result.seq ?? 0 });
-		}
-		if (result.query || result.image_url) {
-			trackEvent("search_initiated", {
-				query: result.query,
-				image_url: result.image_url,
-				result_count: result.products.length,
+			// A host can deliver concurrent tool results to one instance, and the bridge
+			// identifies neither, so only the echoed criteria pair a result to its search.
+			const pendingInput = pendingRef.current;
+			const input = readSearchCriteria(params.structuredContent) ?? pendingInput;
+			pendingRef.current = null;
+			const parsed = MountResultSchema.safeParse(params.structuredContent);
+			if (!parsed.success) {
+				if (input && (input.query || input.imageUrl)) {
+					dispatch({ type: "resultLost", input });
+				} else if (input) {
+					dispatch({ type: "error", message: RELOAD_FAILURE_MESSAGE });
+				}
+				return;
+			}
+			const result = parsed.data as MountResult;
+			setAnalyticsTarget(result.server_origin, result.session_id);
+			if (result.thread_id) {
+				setThreadId(result.thread_id);
+			}
+			const asOf = result.as_of ? Date.parse(result.as_of) : Number.NaN;
+			if (Number.isFinite(asOf)) {
+				setOrderKey({ asOf, seq: result.seq ?? 0 });
+			}
+			const key = searchKey(input);
+			const healed = healedKeyRef.current;
+			if (
+				!pendingInput &&
+				healed &&
+				healed.key === key &&
+				Date.now() - healed.at < HEAL_TWIN_WINDOW_MS
+			) {
+				healedKeyRef.current = null;
+				return;
+			}
+			if (!input && searchesRef.current.length > 0) {
+				return;
+			}
+			const existing = searchesRef.current.find((set) => set.key === key);
+			if (existing && sameResultContent(existing, result.products)) {
+				dispatch({ type: "acknowledge" });
+				return;
+			}
+			if (result.query || result.image_url) {
+				trackEvent("search_initiated", {
+					query: result.query,
+					image_url: result.image_url,
+					result_count: result.products.length,
+				});
+			}
+			dispatch({
+				type: "result",
+				products: result.products,
+				nextPageToken: result.next_page_token ?? null,
+				input,
 			});
-		}
-		dispatch({
-			type: "result",
-			products: result.products,
-			nextPageToken: result.next_page_token ?? null,
-			input,
-		});
-	}, []);
+		},
+		[cancelHeal],
+	);
 
 	const onToolCancelled = React.useCallback(() => {
+		cancelHeal();
 		pendingRef.current = null;
 		dispatch({ type: "cancelled" });
-	}, []);
+	}, [cancelHeal]);
 
 	const openDetail = React.useCallback(
 		(product: ProductDetail, origin: DetailOrigin = "search") => {
@@ -300,12 +346,17 @@ function useModelDrivenState() {
 
 	const hydrate = React.useCallback(
 		(products: ProductDetail[], nextPageToken: string | null, input: PendingSearch | null) => {
+			pendingRef.current = null;
+			if (input && (input.query || input.imageUrl)) {
+				healedKeyRef.current = { key: searchKey(input), at: Date.now() };
+			}
 			dispatch({ type: "result", products, nextPageToken, input });
 		},
 		[],
 	);
 
 	const failHydration = React.useCallback((message: string) => {
+		pendingRef.current = null;
 		dispatch({ type: "error", message });
 	}, []);
 
@@ -320,6 +371,8 @@ function useModelDrivenState() {
 		activate,
 		openSearch,
 		backDetail,
+		runHeal,
+		cancelHeal,
 		hydrate,
 		failHydration,
 	};
@@ -365,7 +418,7 @@ function StorefrontCore({
 	hostContext: McpUiHostContext | undefined;
 }) {
 	const { search, searches, detail, scene, pending, lostResult, toolError } = state;
-	const { hydrate, failHydration } = state;
+	const { runHeal, cancelHeal, hydrate, failHydration } = state;
 	const queryClient = useQueryClient();
 
 	const displayMode = hostContext?.displayMode ?? "inline";
@@ -374,6 +427,18 @@ function StorefrontCore({
 
 	const [savedOpen, setSavedOpen] = React.useState(false);
 	const saved = useSavedProducts(bridge, savedOpen);
+
+	const wide = fullscreen || expandedInline;
+	const seenSaveRef = React.useRef(saved.lastAdded);
+	React.useEffect(() => {
+		if (saved.lastAdded === seenSaveRef.current) {
+			return;
+		}
+		seenSaveRef.current = saved.lastAdded;
+		if (saved.lastAdded && wide) {
+			setSavedOpen(true);
+		}
+	}, [saved.lastAdded, wide]);
 
 	const [settlingInline, setSettlingInline] = React.useState(false);
 	const wasFullscreen = React.useRef(fullscreen);
@@ -436,23 +501,13 @@ function StorefrontCore({
 
 	const healSearch = React.useCallback(
 		(input: PendingSearch) => {
-			let cancelled = false;
-			fetchFirstBrowsePage(queryClient, bridge, input)
-				.then((page) => {
-					if (!cancelled) {
-						hydrate(page.products, page.nextPageToken, input);
-					}
-				})
-				.catch(() => {
-					if (!cancelled) {
-						failHydration(RELOAD_FAILURE_MESSAGE);
-					}
-				});
-			return () => {
-				cancelled = true;
-			};
+			runHeal(fetchFirstBrowsePage(queryClient, bridge, input), {
+				onResolve: (page) => hydrate(page.products, page.nextPageToken, input),
+				onReject: () => failHydration(RELOAD_FAILURE_MESSAGE),
+			});
+			return cancelHeal;
 		},
-		[queryClient, bridge, hydrate, failHydration],
+		[queryClient, bridge, runHeal, cancelHeal, hydrate, failHydration],
 	);
 
 	React.useEffect(() => {
@@ -561,7 +616,10 @@ function StorefrontCore({
 		}
 	}, [bridge, fullscreen, state]);
 
+	const closeSaved = React.useCallback(() => setSavedOpen(false), []);
+
 	const compareSaved = React.useCallback(() => {
+		closeSaved();
 		const ids = saved.syncedSaved.map((p) => p.id);
 		trackEvent("compare_requested", { product_ids: ids, count: ids.length });
 		bridge
@@ -571,7 +629,15 @@ function StorefrontCore({
 			.catch((error: unknown) => {
 				console.warn("compare message failed to send", error);
 			});
-	}, [bridge, saved.syncedSaved]);
+	}, [bridge, saved.syncedSaved, closeSaved]);
+
+	const selectSaved = React.useCallback(
+		(product: ProductDetail) => {
+			closeSaved();
+			state.openDetail(product, "search");
+		},
+		[state.openDetail, closeSaved],
+	);
 
 	const openDetailFromInline = React.useCallback(
 		(product: ProductDetail, sourceKey: string) => {
@@ -646,7 +712,7 @@ function StorefrontCore({
 				/>
 			) : search ? (
 				<BrowseView
-					key={search.nonce}
+					key={search.key}
 					bridge={bridge}
 					saved={saved}
 					initialQuery={search.query}
@@ -671,7 +737,7 @@ function StorefrontCore({
 		body = (
 			<div
 				className={cn(
-					"relative flex w-full max-sm:overflow-hidden",
+					"relative flex w-full overflow-hidden",
 					fullscreen && "h-full min-h-0",
 				)}
 			>
@@ -679,9 +745,9 @@ function StorefrontCore({
 				<SavedTray
 					saved={saved}
 					open={savedOpen}
-					onSelect={(product) => state.openDetail(product, "search")}
+					onSelect={selectSaved}
 					onCompare={compareSaved}
-					onClose={() => setSavedOpen(false)}
+					onClose={closeSaved}
 				/>
 			</div>
 		);
