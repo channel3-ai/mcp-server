@@ -70,11 +70,13 @@ export function SavedTray({
 }) {
 	return (
 		<aside
+			inert={!open}
 			className={cn(
-				"min-h-0 overflow-hidden bg-background sm:transition-[width,opacity] sm:duration-300 sm:ease-drawer",
-				open
-					? "w-full opacity-100 sm:w-64 sm:shrink-0 sm:border-l"
-					: "w-0 shrink-0 opacity-0",
+				"min-h-0 overflow-hidden bg-background",
+				"absolute inset-y-0 right-0 z-30 w-full transition-transform duration-300 ease-drawer",
+				open ? "translate-x-0" : "translate-x-full",
+				"sm:static sm:inset-auto sm:z-auto sm:translate-x-0 sm:shrink-0 sm:transition-[width,opacity] sm:duration-300 sm:ease-drawer",
+				open ? "sm:w-64 sm:border-l sm:opacity-100" : "sm:w-0 sm:opacity-0",
 			)}
 		>
 			<div className="flex h-full min-h-0 w-full flex-col sm:w-64">

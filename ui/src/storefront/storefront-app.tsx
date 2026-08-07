@@ -669,21 +669,20 @@ function StorefrontCore({
 				/>
 			);
 		body = (
-			<div className={cn("flex w-full", fullscreen && "h-full min-h-0")}>
-				<div
-					className={cn("h-full min-w-0 flex-1", savedOpen ? "hidden sm:block" : "block")}
-				>
-					{wideLayout(sceneBody)}
-				</div>
-				{savedOpen || fullscreen ? (
-					<SavedTray
-						saved={saved}
-						open={savedOpen}
-						onSelect={(product) => state.openDetail(product, "search")}
-						onCompare={compareSaved}
-						onClose={() => setSavedOpen(false)}
-					/>
-				) : null}
+			<div
+				className={cn(
+					"relative flex w-full max-sm:overflow-hidden",
+					fullscreen && "h-full min-h-0",
+				)}
+			>
+				<div className="h-full min-w-0 flex-1">{wideLayout(sceneBody)}</div>
+				<SavedTray
+					saved={saved}
+					open={savedOpen}
+					onSelect={(product) => state.openDetail(product, "search")}
+					onCompare={compareSaved}
+					onClose={() => setSavedOpen(false)}
+				/>
 			</div>
 		);
 	} else if (settlingInline) {
