@@ -82,7 +82,7 @@ export function BrowseView({
 	const hasHeader = Boolean(onBack || onExit);
 
 	return (
-		<div className="flex min-h-full flex-col">
+		<div className="flex min-h-full flex-col transition-opacity duration-200 ease-out starting:opacity-0">
 			{hasHeader ? (
 				<div className="sticky top-0 z-10 flex items-center gap-2 bg-background px-4 pt-4 pb-2">
 					{onBack ? (

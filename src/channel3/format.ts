@@ -18,7 +18,6 @@ function cdnImages<T extends { url: string }>(images: T[] | undefined): T[] | un
 	return images?.filter(isCdnImage);
 }
 
-
 function summaryImage(product: ProductDetail): ProductImage | undefined {
 	const images = cdnImages(product.images as ProductImage[] | undefined);
 	if (!images?.length) {

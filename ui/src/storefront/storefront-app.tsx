@@ -752,8 +752,10 @@ function StorefrontCore({
 							: "Open saved products"
 					}
 					className={cn(
-						"absolute right-6 z-20 size-12 rounded-full shadow-lg",
-						fullscreen ? "top-6" : "top-16",
+						"absolute right-[calc(1.5rem+var(--inset-right))] z-20 size-12 rounded-full shadow-lg",
+						fullscreen
+							? "top-[calc(1.5rem+var(--inset-top))]"
+							: "top-[calc(4rem+var(--inset-top))]",
 					)}
 				>
 					<Bookmark className="size-5" />

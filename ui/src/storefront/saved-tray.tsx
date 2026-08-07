@@ -73,7 +73,7 @@ export function SavedTray({
 	return (
 		<aside
 			className={cn(
-				"min-h-0 overflow-hidden bg-background transition-[width,opacity] duration-300 ease-in-out",
+				"min-h-0 overflow-hidden bg-background transition-[width,opacity] duration-300 ease-drawer",
 				open
 					? "w-full opacity-100 sm:w-64 sm:shrink-0 sm:border-l"
 					: "w-0 shrink-0 opacity-0",

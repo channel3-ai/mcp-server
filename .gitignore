@@ -3,6 +3,7 @@ node_modules
 .dev.vars
 .cursor
 .entire
+.journey
 .vscode
 .DS_Store
 tsconfig.tsbuildinfo

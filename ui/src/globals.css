@@ -2,6 +2,12 @@
 @import "tw-animate-css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant hoverable (@media (hover: hover) and (pointer: fine));
+
+@theme {
+	--ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+	--ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
 
 @theme inline {
 	--color-background: var(--background);
@@ -77,6 +83,19 @@ body {
 
 	&::-webkit-scrollbar {
 		display: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms;
+		animation-iteration-count: 1;
+		scroll-behavior: auto;
+		transition-duration: 150ms;
+		transition-property:
+			opacity, color, background-color, border-color, outline-color, box-shadow, fill, stroke;
 	}
 }
 

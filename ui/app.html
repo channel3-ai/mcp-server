@@ -11,12 +11,12 @@
 				gap: 1rem;
 				overflow: hidden;
 			}
-			.boot-card {
-				display: flex;
-				width: 10rem;
-				flex-shrink: 0;
-				flex-direction: column;
-			}
+		.boot-card {
+			display: flex;
+			width: 15rem;
+			flex-shrink: 0;
+			flex-direction: column;
+		}
 			.boot-img,
 			.boot-line {
 				border-radius: 0.375rem;
@@ -41,12 +41,18 @@
 				width: 25%;
 				margin-top: 0.75rem;
 			}
-			@keyframes boot-pulse {
-				50% {
-					opacity: 0.5;
-				}
+		@keyframes boot-pulse {
+			50% {
+				opacity: 0.5;
 			}
-		</style>
+		}
+		@media (prefers-reduced-motion: reduce) {
+			.boot-img,
+			.boot-line {
+				animation: none;
+			}
+		}
+	</style>
 	</head>
 	<body>
 		<div id="root">
