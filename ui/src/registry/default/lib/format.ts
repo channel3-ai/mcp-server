@@ -51,6 +51,15 @@ export function availabilityLabel(status: AvailabilityStatus): string {
 /** API cleaned square lives on `cleaned_url`. */
 type Image = ProductImage & { cleaned_url?: string | null };
 
+export function preferCleanedImages(images: ReadonlyArray<Image> | undefined): ProductImage[] {
+	if (!images?.length) {
+		return [];
+	}
+	return images.map((image) =>
+		image.cleaned_url ? { ...image, url: image.cleaned_url } : image,
+	);
+}
+
 /**
  * Pick the best image to show for a product.
  *
@@ -76,8 +85,7 @@ export function pickImage(
 /**
  * Hover/secondary image priority: a contextual shot (product worn or in use)
  * makes a far more compelling crossfade than another clean studio angle. Shot
- * types are tried in this order, then any remaining image, with reference shots
- * (size charts, packaging, etc.) excluded entirely.
+ * types are tried in this order, then any remaining image.
  */
 const HOVER_SHOT_PRIORITY: ReadonlyArray<NonNullable<ProductImage["shot_type"]>> = [
 	"on_model",
@@ -87,41 +95,43 @@ const HOVER_SHOT_PRIORITY: ReadonlyArray<NonNullable<ProductImage["shot_type"]>>
 	"angle_view",
 ];
 
-const HOVER_SHOT_EXCLUDE: ReadonlySet<NonNullable<ProductImage["shot_type"]>> = new Set([
-	"size_chart",
-	"packaging",
-	"product_information",
-	"merchant_information",
-	"scale_reference",
-]);
+function withCleanedDisplayUrl(image: Image): ProductImage {
+	return image.cleaned_url ? { ...image, url: image.cleaned_url } : image;
+}
+
+function isSameDisplay(image: Image, excludeUrl: string | undefined): boolean {
+	return (
+		excludeUrl != null && (image.url === excludeUrl || image.cleaned_url === excludeUrl)
+	);
+}
 
 /**
  * Pick the best image to crossfade to on hover, preferring contextual shots
- * (see {@link HOVER_SHOT_PRIORITY}). Returns `undefined` when there's no
- * suitable second image.
+ * (see {@link HOVER_SHOT_PRIORITY}). Returns `undefined` only when there is no
+ * other image at all.
+ *
+ * `excludeUrl` is the primary image's display URL; an image is excluded when
+ * either its raw `url` or its `cleaned_url` matches, so the hover never
+ * crossfades to the uncleaned twin of a cleaned primary (or vice versa).
  */
 export function pickHoverImage(
-	images: ReadonlyArray<ProductImage> | undefined,
+	images: ReadonlyArray<Image> | undefined,
 	{ excludeUrl }: { excludeUrl?: string } = {},
 ): ProductImage | undefined {
 	if (!images || images.length === 0) {
 		return undefined;
 	}
-	const candidates = images.filter(
-		(image) =>
-			image.url !== excludeUrl &&
-			!(image.shot_type != null && HOVER_SHOT_EXCLUDE.has(image.shot_type)),
-	);
+	const candidates = images.filter((image) => !isSameDisplay(image, excludeUrl));
 	if (candidates.length === 0) {
 		return undefined;
 	}
 	for (const shot of HOVER_SHOT_PRIORITY) {
 		const match = candidates.find((image) => image.shot_type === shot);
 		if (match) {
-			return match;
+			return withCleanedDisplayUrl(match);
 		}
 	}
-	return candidates[0];
+	return withCleanedDisplayUrl(candidates[0]);
 }
 
 /** True when offers exist but none are in stock. */

@@ -10,7 +10,11 @@ import {
 } from "../../shared/wire";
 import { createClient, type ProductDetail } from "../channel3/client";
 import { toPublicProduct } from "../channel3/format";
-import { findSimilarProductsPage, searchProductsPage } from "../channel3/products";
+import {
+	findSimilarProductsPage,
+	isExhaustedPageTokenError,
+	searchProductsPage,
+} from "../channel3/products";
 import { BrowseProductsSchema, GetSimilarSchema, ProductIdRequestSchema } from "../schemas";
 import { asExtAppsServer, STOREFRONT_RESOURCE_URI } from "../storefront";
 import type { ToolContext } from "../types";
@@ -53,7 +57,19 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 				"browse_products",
 				ctx,
 				params,
-				async (p) => toProductsPage(await searchProductsPage(client, p)),
+				async (p) => {
+					try {
+						return toProductsPage(await searchProductsPage(client, p));
+					} catch (err) {
+						if (p.page_token && isExhaustedPageTokenError(err)) {
+							console.warn(
+								`browse_products page token exhausted: ${err instanceof Error ? err.message : String(err)}`,
+							);
+							return { products: [], next_page_token: null };
+						}
+						throw err;
+					}
+				},
 				{
 					trackProperties: threadProperty(params),
 					summarize: (r) => `${r.products.length} products`,
