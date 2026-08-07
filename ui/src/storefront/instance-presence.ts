@@ -1,4 +1,4 @@
-import { BroadcastChannel as ElectionChannel, createLeaderElection } from "broadcast-channel";
+import { createLeaderElection, BroadcastChannel as ElectionChannel } from "broadcast-channel";
 import * as React from "react";
 
 import { getOrCreateId } from "@/storefront/storage";

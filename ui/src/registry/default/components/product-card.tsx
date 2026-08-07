@@ -129,11 +129,11 @@ export const ProductCard = React.memo(function ProductCard({
 					loading={priority ? "eager" : "lazy"}
 					fetchPriority={priority ? "high" : undefined}
 					decoding="async"
-				className={cn(
-					"size-full object-contain transition-[opacity,scale] duration-300 ease-out",
-					imageLoaded ? "opacity-100" : "opacity-0",
-					secondImage ? null : "hoverable:group-hover:scale-105",
-				)}
+					className={cn(
+						"size-full object-contain transition duration-300",
+						imageLoaded ? "opacity-100" : "opacity-0",
+						secondImage ? null : "group-hover:scale-105",
+					)}
 					ref={revealIfComplete}
 					onLoad={() => setImageLoaded(true)}
 					onError={() => setImageFailed(true)}
@@ -152,10 +152,10 @@ export const ProductCard = React.memo(function ProductCard({
 					aria-hidden
 					onLoad={() => setHoverReadyUrl(secondImage.url)}
 					onError={() => setHoverFailedUrl(secondImage.url)}
-				className={cn(
-					"absolute inset-0 size-full bg-white object-contain opacity-0 transition-opacity duration-300 ease-out",
-					hoverReadyUrl === secondImage.url && "hoverable:group-hover:opacity-100",
-				)}
+					className={cn(
+						"absolute inset-0 size-full bg-white object-contain opacity-0 transition-opacity duration-300",
+						hoverReadyUrl === secondImage.url && "group-hover:opacity-100",
+					)}
 				/>
 			) : null}
 			{preview ? (
@@ -194,7 +194,7 @@ export const ProductCard = React.memo(function ProductCard({
 							onMouseLeave={() => setPreview(null)}
 							onFocus={() => setPreview(value.thumbnail_url ?? null)}
 							onBlur={() => setPreview(null)}
-							className="size-5 cursor-pointer overflow-hidden rounded-full ring-1 ring-border transition-shadow hover:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							className="size-5 cursor-pointer overflow-hidden rounded-full ring-1 ring-border transition hover:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						>
 							<img
 								src={value.thumbnail_url ?? undefined}
@@ -212,7 +212,7 @@ export const ProductCard = React.memo(function ProductCard({
 					type="button"
 					aria-label={product.title}
 					onClick={() => onSelect?.(product)}
-					className="flex size-5 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-muted text-muted-foreground ring-1 ring-border transition-shadow hover:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					className="flex size-5 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-muted text-muted-foreground ring-1 ring-border transition hover:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
 					{fallbackThumb ? (
 						<img src={fallbackThumb} alt="" className="size-full object-cover" />
@@ -228,7 +228,7 @@ export const ProductCard = React.memo(function ProductCard({
 		<div className="flex flex-col gap-1 pt-2.5">
 			{brand ? <span className="truncate text-xs text-muted-foreground">{brand}</span> : null}
 			<span className="truncate text-sm leading-snug font-medium">{product.title}</span>
-			<div className="flex min-h-[1.5rem] items-baseline gap-2 pt-1">
+			<div className="flex min-h-6 items-baseline gap-2 pt-1">
 				{offer ? (
 					<>
 						<span className="text-sm font-semibold">
@@ -250,7 +250,7 @@ export const ProductCard = React.memo(function ProductCard({
 	);
 
 	const tapClass =
-		"block w-full cursor-pointer text-left transition-[scale] duration-150 ease-out-strong active:scale-[0.98] motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+		"block w-full cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 	// Prefetch the destination as soon as the user signals intent (hover/focus/
 	// touch), so it's warm before the click. Harmless to fire more than once.

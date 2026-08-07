@@ -10,6 +10,7 @@
 		"dev": "wrangler dev",
 		"build:ui": "vite build ui",
 		"typecheck:ui": "tsc -p ui/tsconfig.json",
+		"check": "biome check --write",
 		"format": "biome format --write",
 		"lint:fix": "biome lint --fix",
 		"start": "wrangler dev",

@@ -176,7 +176,7 @@ function Swatch({
 			aria-label={value.label}
 			aria-pressed={state === "selected"}
 			className={cn(
-				"relative size-10 cursor-pointer overflow-hidden rounded-full bg-muted transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+				"relative size-10 cursor-pointer overflow-hidden rounded-full bg-muted transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
 				SWATCH_STATE[state],
 			)}
 		>

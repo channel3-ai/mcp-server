@@ -14,7 +14,7 @@ import type { SavedProducts } from "@/storefront/use-saved-products";
 export function BrowseGridSkeleton({ caption }: { caption?: string }) {
 	return (
 		<div className="flex min-h-full flex-col gap-3 p-4" aria-busy="true">
-			{caption ? <p className="text-sm text-muted-foreground">{caption}</p> : null}
+			{caption ? <p className="text-muted-foreground text-sm">{caption}</p> : null}
 			<ProductGrid products={[]} loading />
 		</div>
 	);
@@ -82,7 +82,7 @@ export function BrowseView({
 	const hasHeader = Boolean(onBack || onExit);
 
 	return (
-		<div className="flex min-h-full flex-col transition-opacity duration-200 ease-out starting:opacity-0">
+		<div className="flex min-h-full flex-col starting:opacity-0 transition-opacity duration-200 ease-out">
 			{hasHeader ? (
 				<div className="sticky top-0 z-10 flex items-center gap-2 bg-background px-4 pt-4 pb-2">
 					{onBack ? (
@@ -116,7 +116,7 @@ export function BrowseView({
 						showSwatches={false}
 						locale={locale}
 						emptyState={
-							<p className="py-16 text-center text-sm text-muted-foreground">
+							<p className="py-16 text-center text-muted-foreground text-sm">
 								{criteria
 									? "No products found. Ask in the chat to refine your search."
 									: "Ask for something in the chat to see products here."}
@@ -130,7 +130,7 @@ export function BrowseView({
 				{isFetchNextPageError ? (
 					<div
 						role="status"
-						className="flex items-center justify-center gap-3 py-4 text-sm text-muted-foreground"
+						className="flex items-center justify-center gap-3 py-4 text-muted-foreground text-sm"
 					>
 						<span>Couldn't load more products.</span>
 						<Button variant="outline" size="sm" onClick={() => void fetchNextPage()}>

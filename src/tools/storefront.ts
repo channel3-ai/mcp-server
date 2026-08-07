@@ -1,9 +1,5 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
-
-import { createClient, type ProductDetail } from "../channel3/client";
-import { toPublicProduct } from "../channel3/format";
-import { findSimilarProductsPage, searchProductsPage } from "../channel3/products";
 import {
 	type GetDetailsResult,
 	GetDetailsResultSchema,
@@ -12,6 +8,9 @@ import {
 	type ProductsPageResult,
 	ProductsPageResultSchema,
 } from "../../shared/wire";
+import { createClient, type ProductDetail } from "../channel3/client";
+import { toPublicProduct } from "../channel3/format";
+import { findSimilarProductsPage, searchProductsPage } from "../channel3/products";
 import { BrowseProductsSchema, GetSimilarSchema, ProductIdRequestSchema } from "../schemas";
 import { asExtAppsServer, STOREFRONT_RESOURCE_URI } from "../storefront";
 import type { ToolContext } from "../types";

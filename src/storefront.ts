@@ -1,7 +1,7 @@
 import {
+	RESOURCE_MIME_TYPE,
 	registerAppResource,
 	type registerAppTool,
-	RESOURCE_MIME_TYPE,
 } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
 

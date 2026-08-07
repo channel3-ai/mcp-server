@@ -32,7 +32,7 @@ export function InlineSearchSkeleton() {
 
 export function InlineError({ message }: { message: string }) {
 	return (
-		<div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+		<div className="rounded-lg border border-dashed p-4 text-muted-foreground text-sm">
 			<p className="mb-1 font-medium text-foreground">That didn't work.</p>
 			<p className="mb-2 text-xs opacity-80">{message}</p>
 			<p className="text-xs">Ask again in the chat to retry.</p>
@@ -58,14 +58,14 @@ export function InlineResults({
 	locale?: string;
 }) {
 	return (
-		<div className="flex flex-col gap-3 transition-opacity duration-200 ease-out starting:opacity-0">
+		<div className="flex flex-col gap-3 starting:opacity-0 transition-opacity duration-200 ease-out">
 			<div className="flex items-center justify-end gap-2">
 				{saved.count > 0 ? (
 					<button
 						type="button"
 						onClick={onShowSaved}
 						aria-label={`Show saved products (${saved.count})`}
-						className="relative flex items-center gap-1 p-1 text-sm text-muted-foreground transition-colors before:absolute before:-inset-1 before:content-[''] hover:text-foreground"
+						className="relative flex items-center gap-1 p-1 text-muted-foreground text-sm transition-colors before:absolute before:-inset-1 before:content-[''] hover:text-foreground"
 					>
 						<BookmarkCheck className="size-4" />
 						<span className="tabular-nums">{saved.count}</span>

@@ -1,8 +1,7 @@
 import type { PriceHistoryPoint } from "@channel3/sdk/resources";
 import * as React from "react";
-
-import { cn } from "@/lib/utils";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { cn } from "@/lib/utils";
 import { currencyFormatter, formatCurrency } from "@/registry/default/lib/format";
 
 const WIDTH = 640;
@@ -158,7 +157,7 @@ function Chart({
 							y={y(tick)}
 							dominantBaseline="middle"
 							textAnchor="end"
-							className="fill-muted-foreground text-[11px]"
+							className="fill-muted-foreground text-2xs"
 						>
 							{formatAxis(tick)}
 						</text>
@@ -170,7 +169,7 @@ function Chart({
 						x={tick.x}
 						y={HEIGHT - 6}
 						textAnchor="middle"
-						className="fill-muted-foreground text-[11px]"
+						className="fill-muted-foreground text-2xs"
 					>
 						{tick.label}
 					</text>
@@ -203,7 +202,7 @@ function Chart({
 			</svg>
 			{hover ? (
 				<div
-					className="pointer-events-none absolute rounded-md border bg-popover px-2 py-1 text-xs text-popover-foreground shadow-sm"
+					className="pointer-events-none absolute rounded-md border bg-popover px-2 py-1 text-popover-foreground text-xs shadow-sm"
 					style={{
 						left: `${(x(hover.index) / WIDTH) * 100}%`,
 						top: 0,

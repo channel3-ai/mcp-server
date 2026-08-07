@@ -6,7 +6,6 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PriceChart } from "@/storefront/price-chart";
 import {
 	ProductDetailsAttributes,
 	ProductDetailsDescription,
@@ -23,6 +22,7 @@ import { useVariantSelection } from "@/registry/default/hooks/use-variant-select
 import { trackEvent } from "@/storefront/analytics";
 import type { StorefrontBridge } from "@/storefront/bridge";
 import { detailQueryOptions } from "@/storefront/detail-query";
+import { PriceChart } from "@/storefront/price-chart";
 import { ProductSaveToggle } from "@/storefront/save-toggle";
 import type { PriceFocusStats } from "@/storefront/types";
 import type { SavedProducts } from "@/storefront/use-saved-products";
@@ -147,7 +147,7 @@ export function DetailView({
 	}
 
 	return (
-		<div className="flex min-h-full flex-col gap-2 p-4 transition-opacity duration-200 ease-out starting:opacity-0">
+		<div className="flex min-h-full flex-col gap-2 p-4 starting:opacity-0 transition-opacity duration-200 ease-out">
 			{onBack ? (
 				<div>
 					<Button variant="ghost" size="icon" aria-label="Back" onClick={onBack}>

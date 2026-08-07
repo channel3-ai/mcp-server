@@ -1,9 +1,8 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
-
+import { GetProductsResultSchema } from "../../shared/wire";
 import { productAnchorLine } from "../channel3/format";
 import { getProducts } from "../channel3/products";
-import { GetProductsResultSchema } from "../../shared/wire";
 import { GetProductsRequestSchema } from "../schemas";
 import { asExtAppsServer, STOREFRONT_RESOURCE_URI } from "../storefront";
 import { resolveThreadId, THREAD_ID_TOOL_DESCRIPTION, threadIdSummaryLines } from "../thread";
