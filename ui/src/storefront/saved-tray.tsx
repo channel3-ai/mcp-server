@@ -61,26 +61,23 @@ export function SavedTray({
 	onSelect,
 	onCompare,
 	onClose,
-	className,
 }: {
 	saved: SavedProducts;
 	open: boolean;
 	onSelect: (product: ProductDetail) => void;
 	onCompare: () => void;
 	onClose: () => void;
-	className?: string;
 }) {
 	return (
 		<aside
 			className={cn(
-				"min-h-0 overflow-hidden bg-background transition-[width,opacity] duration-300 ease-drawer",
+				"min-h-0 overflow-hidden bg-background sm:transition-[width,opacity] sm:duration-300 sm:ease-drawer",
 				open
 					? "w-full opacity-100 sm:w-64 sm:shrink-0 sm:border-l"
 					: "w-0 shrink-0 opacity-0",
-				className,
 			)}
 		>
-			<div className="flex h-full min-h-0 w-screen flex-col sm:w-64">
+			<div className="flex h-full min-h-0 w-full flex-col sm:w-64">
 				<div className="flex items-center gap-2 border-b px-4 py-3">
 					<h2 className="min-w-0 flex-1 truncate text-sm font-medium">
 						Saved ({saved.count})

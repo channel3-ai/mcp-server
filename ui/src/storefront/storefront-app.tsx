@@ -668,16 +668,10 @@ function StorefrontCore({
 					caption={pending?.query ? `Searching for “${pending.query}”…` : pending?.label}
 				/>
 			);
-		const detailVisible = scene === "detail" && detail != null;
-		const trayCoversMobile = savedOpen && !detailVisible;
-		const pdpCoversMobile = savedOpen && detailVisible;
 		body = (
 			<div className={cn("flex w-full", fullscreen && "h-full min-h-0")}>
 				<div
-					className={cn(
-						"h-full min-w-0 flex-1",
-						trayCoversMobile ? "hidden sm:block" : "block",
-					)}
+					className={cn("h-full min-w-0 flex-1", savedOpen ? "hidden sm:block" : "block")}
 				>
 					{wideLayout(sceneBody)}
 				</div>
@@ -688,7 +682,6 @@ function StorefrontCore({
 						onSelect={(product) => state.openDetail(product, "search")}
 						onCompare={compareSaved}
 						onClose={() => setSavedOpen(false)}
-						className={pdpCoversMobile ? "hidden sm:block" : "block"}
 					/>
 				) : null}
 			</div>
