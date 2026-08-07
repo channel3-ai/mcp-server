@@ -7,6 +7,10 @@
 @theme {
 	--ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 	--ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+	--text-2xs: 0.6875rem;
+	--text-2xs--line-height: 1rem;
+	--text-3xs: 0.625rem;
+	--text-3xs--line-height: 0.875rem;
 }
 
 @theme inline {
@@ -37,6 +41,9 @@ body {
 
 :root {
 	--radius: var(--border-radius-md, 0.625rem);
+	/* Larger surfaces travel less to read as the same depth of press. */
+	--press-scale-control: 0.97;
+	--press-scale-surface: 0.98;
 	--fb-background: oklch(1 0 0);
 	--fb-foreground: oklch(0.141 0.005 285.823);
 	--fb-primary: oklch(0.491 0.27 292.581);
@@ -86,7 +93,56 @@ body {
 	}
 }
 
+[data-slot="button"],
+[data-slot="carousel-previous"],
+[data-slot="carousel-next"] {
+	transition-property:
+		color, background-color, border-color, outline-color, box-shadow, opacity, scale;
+	transition-duration: 150ms;
+	transition-timing-function: var(--ease-out-strong);
+
+	&:active:not(:disabled) {
+		scale: var(--press-scale-control);
+	}
+}
+
+[data-slot="carousel-previous"]:disabled,
+[data-slot="carousel-next"]:disabled {
+	opacity: 0;
+}
+
+[data-slot="product-card"] > :is(a, button) {
+	transition: scale 150ms var(--ease-out-strong);
+
+	&:active {
+		scale: var(--press-scale-surface);
+	}
+}
+
+[data-slot="product-card"] img {
+	transition-timing-function: var(--ease-out);
+}
+
+@media (hover: none), (pointer: coarse) {
+	[data-slot="product-card"] img {
+		scale: 1;
+	}
+
+	[data-slot="product-card"] img[aria-hidden="true"] {
+		opacity: 0;
+	}
+
+	[aria-label="Open color picker"]:hover {
+		scale: 1;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
+	:root {
+		--press-scale-control: 1;
+		--press-scale-surface: 1;
+	}
+
 	*,
 	*::before,
 	*::after {

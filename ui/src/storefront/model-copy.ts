@@ -2,13 +2,13 @@ import type { ProductDetail } from "@channel3/sdk/resources";
 import { formatCurrency, leadOffer } from "@shared/format";
 
 import type { PresenceRecord, ResultSetPresence } from "@/storefront/instance-presence";
-import { compareOrderKeys } from "@/storefront/types";
 import type {
 	OfferFocusSummary,
 	PriceFocusStats,
 	SyncedProduct,
 	ViewingContext,
 } from "@/storefront/types";
+import { compareOrderKeys } from "@/storefront/types";
 
 type SyncSource = Pick<ProductDetail, "id" | "title" | "brands" | "offers">;
 

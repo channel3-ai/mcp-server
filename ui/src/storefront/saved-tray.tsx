@@ -1,11 +1,10 @@
 import type { ProductDetail } from "@channel3/sdk/resources";
+import { formatPrice, leadOffer } from "@shared/format";
 import { PanelRightClose, Scale } from "lucide-react";
 import * as React from "react";
-
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { formatPrice, leadOffer } from "@shared/format";
 import type { SavedItem, SavedProducts } from "@/storefront/use-saved-products";
 
 const SavedRow = React.memo(function SavedRow({
@@ -38,16 +37,16 @@ const SavedRow = React.memo(function SavedRow({
 				<div className="min-w-0 flex-1">
 					<p className="truncate text-sm">{item.entry.title}</p>
 					{brands?.length ? (
-						<p className="truncate text-xs text-muted-foreground">
+						<p className="truncate text-muted-foreground text-xs">
 							{brands.join(", ")}
 						</p>
 					) : null}
 					{item.status === "pending" ? (
 						<Skeleton className="mt-1 h-3 w-14" />
 					) : item.status === "unavailable" ? (
-						<p className="text-xs text-muted-foreground">Unavailable</p>
+						<p className="text-muted-foreground text-xs">Unavailable</p>
 					) : offer?.price ? (
-						<p className="text-xs text-muted-foreground">{formatPrice(offer.price)}</p>
+						<p className="text-muted-foreground text-xs">{formatPrice(offer.price)}</p>
 					) : null}
 				</div>
 			</button>
@@ -61,28 +60,27 @@ export function SavedTray({
 	onSelect,
 	onCompare,
 	onClose,
-	className,
 }: {
 	saved: SavedProducts;
 	open: boolean;
 	onSelect: (product: ProductDetail) => void;
 	onCompare: () => void;
 	onClose: () => void;
-	className?: string;
 }) {
 	return (
 		<aside
+			inert={!open}
 			className={cn(
-				"min-h-0 overflow-hidden bg-background transition-[width,opacity] duration-300 ease-drawer",
-				open
-					? "w-full opacity-100 sm:w-64 sm:shrink-0 sm:border-l"
-					: "w-0 shrink-0 opacity-0",
-				className,
+				"min-h-0 overflow-hidden bg-background",
+				"absolute inset-y-0 right-0 z-30 w-full transition-transform duration-300 ease-drawer",
+				open ? "translate-x-0" : "translate-x-full",
+				"sm:static sm:inset-auto sm:z-auto sm:shrink-0 sm:translate-x-0 sm:transition-[width,opacity] sm:duration-300 sm:ease-drawer",
+				open ? "sm:w-64 sm:border-l sm:opacity-100" : "sm:w-0 sm:opacity-0",
 			)}
 		>
-			<div className="flex h-full min-h-0 w-screen flex-col sm:w-64">
+			<div className="flex h-full min-h-0 w-full flex-col sm:w-64">
 				<div className="flex items-center gap-2 border-b px-4 py-3">
-					<h2 className="min-w-0 flex-1 truncate text-sm font-medium">
+					<h2 className="min-w-0 flex-1 truncate font-medium text-sm">
 						Saved ({saved.count})
 					</h2>
 					<Button
@@ -107,7 +105,7 @@ export function SavedTray({
 					</Button>
 				</div>
 				{saved.count === 0 ? (
-					<p className="px-4 py-6 text-center text-sm text-muted-foreground">
+					<p className="px-4 py-6 text-center text-muted-foreground text-sm">
 						Nothing saved yet. Tap the bookmark on any product to keep it here.
 					</p>
 				) : (

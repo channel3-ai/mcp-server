@@ -6,8 +6,8 @@ import {
 	useAutoResize,
 	useHostStyles,
 } from "@modelcontextprotocol/ext-apps/react";
-import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { type MountResult, MountResultSchema, SearchCriteriaSchema } from "@shared/wire";
+import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 import { Bookmark } from "lucide-react";
 import * as React from "react";
 
@@ -22,8 +22,8 @@ import {
 } from "@/storefront/bridge";
 import { browseQueryOptions } from "@/storefront/browse-query";
 import { BrowseGridSkeleton, BrowseView } from "@/storefront/browse-view";
-import { type DetailFocus, DetailView } from "@/storefront/detail-view";
 import { detailQueryOptions } from "@/storefront/detail-query";
+import { type DetailFocus, DetailView } from "@/storefront/detail-view";
 import { setThreadId } from "@/storefront/identity";
 import { InlineError, InlineResults, InlineSearchSkeleton } from "@/storefront/inline-views";
 import { type ResultSetPresence, usePresence } from "@/storefront/instance-presence";
@@ -606,7 +606,7 @@ function StorefrontCore({
 			className={cn(
 				"@container min-w-0",
 				fullscreen
-					? "h-full overflow-y-auto pb-(--inset-bottom) scroll-pb-(--inset-bottom) scrollbar-hidden"
+					? "scrollbar-hidden h-full scroll-pb-(--inset-bottom) overflow-y-auto pb-(--inset-bottom)"
 					: "min-h-full",
 			)}
 		>
@@ -668,29 +668,21 @@ function StorefrontCore({
 					caption={pending?.query ? `Searching for “${pending.query}”…` : pending?.label}
 				/>
 			);
-		const detailVisible = scene === "detail" && detail != null;
-		const trayCoversMobile = savedOpen && !detailVisible;
-		const pdpCoversMobile = savedOpen && detailVisible;
 		body = (
-			<div className={cn("flex w-full", fullscreen && "h-full min-h-0")}>
-				<div
-					className={cn(
-						"h-full min-w-0 flex-1",
-						trayCoversMobile ? "hidden sm:block" : "block",
-					)}
-				>
-					{wideLayout(sceneBody)}
-				</div>
-				{savedOpen || fullscreen ? (
-					<SavedTray
-						saved={saved}
-						open={savedOpen}
-						onSelect={(product) => state.openDetail(product, "search")}
-						onCompare={compareSaved}
-						onClose={() => setSavedOpen(false)}
-						className={pdpCoversMobile ? "hidden sm:block" : "block"}
-					/>
-				) : null}
+			<div
+				className={cn(
+					"relative flex w-full max-sm:overflow-hidden",
+					fullscreen && "h-full min-h-0",
+				)}
+			>
+				<div className="h-full min-w-0 flex-1">{wideLayout(sceneBody)}</div>
+				<SavedTray
+					saved={saved}
+					open={savedOpen}
+					onSelect={(product) => state.openDetail(product, "search")}
+					onCompare={compareSaved}
+					onClose={() => setSavedOpen(false)}
+				/>
 			</div>
 		);
 	} else if (settlingInline) {
@@ -760,7 +752,7 @@ function StorefrontCore({
 				>
 					<Bookmark className="size-5" />
 					{saved.count > 0 ? (
-						<span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary font-medium text-primary-foreground text-[10px] tabular-nums">
+						<span className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-primary font-medium text-3xs text-primary-foreground tabular-nums">
 							{saved.count}
 						</span>
 					) : null}

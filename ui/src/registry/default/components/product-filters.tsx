@@ -493,7 +493,7 @@ function UnitDropdown<V extends string>({
 				{value}
 				<ChevronDown className="size-3 text-muted-foreground" aria-hidden />
 			</PopoverTrigger>
-			<PopoverContent align="end" className="w-auto min-w-[4.5rem] p-1">
+			<PopoverContent align="end" className="w-auto min-w-18 p-1">
 				<ul>
 					{options.map((option) => (
 						<li key={option.value}>
@@ -658,7 +658,7 @@ function ColorsControl() {
 					<PopoverTrigger
 						type="button"
 						aria-label="Open color picker"
-						className="group relative size-8 shrink-0 overflow-hidden rounded-md border ring-offset-background transition-[scale] hoverable:hover:scale-105 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+						className="group relative size-8 shrink-0 overflow-hidden rounded-md border ring-offset-background transition-all hover:scale-105 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 					>
 						<span className="absolute inset-0" style={{ backgroundColor: draft }} />
 						<span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition-opacity group-hover:bg-black/20 group-hover:opacity-100">
