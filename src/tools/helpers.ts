@@ -11,7 +11,8 @@ export interface ToolCallResult {
 export const READ_ONLY_ANNOTATIONS = {
 	readOnlyHint: true,
 	idempotentHint: true,
-	openWorldHint: true,
+	openWorldHint: false,
+	destructiveHint: false,
 } as const;
 
 export function errorResponse(err: unknown): ToolCallResult {

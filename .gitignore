@@ -1,4 +1,5 @@
 node_modules
+.launch-video
 .wrangler
 .dev.vars
 .cursor
@@ -13,3 +14,4 @@ public/storefront
 skills-lock.json
 PERSISTED-STATE.md
 AGENTS.md
+chatgpt-app-submission.json
