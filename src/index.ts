@@ -21,7 +21,7 @@ const app = new Hono<{
 
 app.use("/", async (c, next) => {
 	if (c.req.method === "GET" && !c.req.header("accept")?.includes("text/event-stream")) {
-		return c.redirect("https://docs.trychannel3.com/mcp-overview", 302);
+		return c.redirect("https://trychannel3.com/mcp", 302);
 	}
 	await next();
 });
