@@ -36,6 +36,7 @@ export async function registerStorefrontResource(server: McpServer, connectorUrl
 				connectDomains: [connectorUrl],
 			},
 		},
+		"openai/widgetDomain": connectorUrl,
 	};
 	registerAppResource(
 		asExtAppsServer(server),
