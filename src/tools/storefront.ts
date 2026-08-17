@@ -8,7 +8,7 @@ import {
 	type ProductsPageResult,
 	ProductsPageResultSchema,
 } from "../../shared/wire";
-import { createClient, type ProductDetail } from "../channel3/client";
+import { createClient } from "../channel3/client";
 import { toPublicProduct } from "../channel3/format";
 import {
 	findSimilarProductsPage,
@@ -24,13 +24,10 @@ const APP_UI_META = {
 	ui: { resourceUri: STOREFRONT_RESOURCE_URI, visibility: ["app" as const] },
 };
 
-function toProductsPage(page: {
-	products: ProductDetail[];
-	next_page_token: string | null;
-}): ProductsPageResult {
+function toProductsPage(page: Awaited<ReturnType<typeof searchProductsPage>>): ProductsPageResult {
 	return {
-		products: page.products.map(toPublicProduct),
-		next_page_token: page.next_page_token,
+		products: page.data.map(toPublicProduct),
+		next_page_token: page.response.next_page_token ?? null,
 	};
 }
 
@@ -118,7 +115,12 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 				ctx,
 				params,
 				async (p): Promise<GetDetailsResult> => ({
-					product: toPublicProduct(await client.products.retrieve(p.product_id)),
+					product: toPublicProduct(
+						await client.products.retrieve({
+							product_id: p.product_id,
+							...(p.selected_options ? { selected_options: p.selected_options } : {}),
+						}),
+					),
 				}),
 				{
 					trackProperties: threadProperty(params),
@@ -145,7 +147,7 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 				params,
 				async (p): Promise<GetPriceHistoryResult> => {
 					const history = await client.priceTracking
-						.retrieveHistory(p.product_id, { days: 30 })
+						.retrieveHistory({ canonical_product_id: p.product_id, days: 30 })
 						.catch((err: unknown) => {
 							console.warn(
 								`price history unavailable for ${p.product_id}: ${err instanceof Error ? err.message : String(err)}`,
@@ -153,6 +155,7 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 							return null;
 						});
 					return {
+						canonical_product_id: p.product_id,
 						history: history?.history ?? [],
 						statistics: history?.statistics ?? null,
 					};

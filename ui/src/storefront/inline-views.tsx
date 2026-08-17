@@ -1,4 +1,4 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
+import type { Product } from "@channel3/sdk/resources";
 import { ArrowRight, Bookmark } from "lucide-react";
 import * as React from "react";
 
@@ -50,12 +50,12 @@ export function InlineResults({
 	onPrefetchProduct,
 	locale,
 }: {
-	products: ProductDetail[];
+	products: Product[];
 	saved: SavedProducts;
-	onSelect: (product: ProductDetail) => void;
+	onSelect: (product: Product) => void;
 	onBrowseAll: () => void;
 	onShowSaved: () => void;
-	onPrefetchProduct?: (product: ProductDetail) => void;
+	onPrefetchProduct?: (product: Product) => void;
 	locale?: string;
 }) {
 	const [bumpKey, setBumpKey] = React.useState(0);

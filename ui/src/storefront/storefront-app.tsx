@@ -1,4 +1,4 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
+import type { Product } from "@channel3/sdk/resources";
 import {
 	type McpUiHostContext,
 	type McpUiToolResultNotification,
@@ -35,7 +35,7 @@ import { useSavedProducts } from "@/storefront/use-saved-products";
 
 interface SearchState {
 	key: string;
-	products: ProductDetail[];
+	products: Product[];
 	query?: string;
 	imageUrl?: string;
 	nextPageToken: string | null;
@@ -47,9 +47,9 @@ type Scene = "search" | "detail";
 type DetailOrigin = "search" | "inline";
 
 interface DetailState {
-	product: ProductDetail;
+	product: Product;
 	origin: DetailOrigin;
-	history: ProductDetail[];
+	history: Product[];
 	nonce: number;
 }
 
@@ -79,7 +79,7 @@ type ModelAction =
 	| { type: "input"; input: PendingSearch }
 	| {
 			type: "result";
-			products: ProductDetail[];
+			products: Product[];
 			nextPageToken: string | null;
 			input: PendingSearch | null;
 	  }
@@ -88,7 +88,7 @@ type ModelAction =
 	| { type: "cancelled" }
 	| { type: "acknowledge" }
 	| { type: "activate"; key: string }
-	| { type: "openDetail"; product: ProductDetail; origin: DetailOrigin }
+	| { type: "openDetail"; product: Product; origin: DetailOrigin }
 	| { type: "backDetail" }
 	| { type: "openSearch" };
 
@@ -107,7 +107,7 @@ function searchKey(input: PendingSearch | null): string {
 	return input?.query || input?.imageUrl || "results";
 }
 
-function sameResultContent(set: SearchState, products: ProductDetail[]): boolean {
+function sameResultContent(set: SearchState, products: Product[]): boolean {
 	if (set.products.length !== products.length) {
 		return false;
 	}
@@ -326,17 +326,14 @@ function useModelDrivenState() {
 		dispatch({ type: "cancelled" });
 	}, [cancelHeal]);
 
-	const openDetail = React.useCallback(
-		(product: ProductDetail, origin: DetailOrigin = "search") => {
-			trackEvent("product_clicked", {
-				product_id: product.id,
-				title: product.title,
-				origin,
-			});
-			dispatch({ type: "openDetail", product, origin });
-		},
-		[],
-	);
+	const openDetail = React.useCallback((product: Product, origin: DetailOrigin = "search") => {
+		trackEvent("product_clicked", {
+			product_id: product.id,
+			title: product.title,
+			origin,
+		});
+		dispatch({ type: "openDetail", product, origin });
+	}, []);
 
 	const activate = React.useCallback((key: string) => dispatch({ type: "activate", key }), []);
 
@@ -345,7 +342,7 @@ function useModelDrivenState() {
 	const backDetail = React.useCallback(() => dispatch({ type: "backDetail" }), []);
 
 	const hydrate = React.useCallback(
-		(products: ProductDetail[], nextPageToken: string | null, input: PendingSearch | null) => {
+		(products: Product[], nextPageToken: string | null, input: PendingSearch | null) => {
 			pendingRef.current = null;
 			if (input && (input.query || input.imageUrl)) {
 				healedKeyRef.current = { key: searchKey(input), at: Date.now() };
@@ -490,7 +487,7 @@ function StorefrontCore({
 	);
 	const searchNonce = search?.nonce;
 	const handleResultsChange = React.useCallback(
-		(products: ProductDetail[]) => {
+		(products: Product[]) => {
 			if (searchNonce === undefined) {
 				return;
 			}
@@ -632,7 +629,7 @@ function StorefrontCore({
 	}, [bridge, saved.syncedSaved, closeSaved]);
 
 	const selectSaved = React.useCallback(
-		(product: ProductDetail) => {
+		(product: Product) => {
 			closeSaved();
 			state.openDetail(product, "search");
 		},
@@ -640,7 +637,7 @@ function StorefrontCore({
 	);
 
 	const openDetailFromInline = React.useCallback(
-		(product: ProductDetail, sourceKey: string) => {
+		(product: Product, sourceKey: string) => {
 			state.activate(sourceKey);
 			state.openDetail(product, "inline");
 			if (!fullscreen) {
@@ -660,7 +657,7 @@ function StorefrontCore({
 	);
 
 	const prefetchProduct = React.useCallback(
-		(product: ProductDetail) => {
+		(product: Product) => {
 			void queryClient.prefetchQuery(detailQueryOptions(bridge, product.id));
 		},
 		[bridge, queryClient],

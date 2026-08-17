@@ -1,24 +1,18 @@
-import type { ProductImage } from "@channel3/sdk/resources";
-import { ImageOff } from "lucide-react";
 import * as React from "react";
+import { ImageOff } from "lucide-react";
+import type { ProductImage } from "@channel3/sdk/resources";
+
+import { cn } from "@/lib/utils";
 import {
-	Carousel,
 	type CarouselApi,
+	Carousel,
 	CarouselContent,
 	CarouselItem,
 	CarouselNext,
 	CarouselPrevious,
 } from "@/components/ui/carousel";
-import { cn } from "@/lib/utils";
 
-function GalleryImage({
-	image,
-	priority = false,
-}: {
-	image: ProductImage;
-	/** Load eagerly at high fetch priority (the initially visible main slide). */
-	priority?: boolean;
-}) {
+function GalleryImage({ image, priority = false }: { image: ProductImage; priority?: boolean }) {
 	const [failed, setFailed] = React.useState(false);
 	const [loaded, setLoaded] = React.useState(false);
 	// A server-rendered image can finish decoding before hydration, so `onLoad`
@@ -42,10 +36,10 @@ function GalleryImage({
 			loading={priority ? "eager" : "lazy"}
 			fetchPriority={priority ? "high" : undefined}
 			decoding="async"
-		className={cn(
-			"absolute inset-0 size-full object-contain transition-opacity duration-300",
-			loaded ? "opacity-100" : "opacity-0",
-		)}
+			className={cn(
+				"absolute inset-0 size-full object-cover transition-opacity duration-300",
+				loaded ? "opacity-100" : "opacity-0",
+			)}
 			ref={revealIfComplete}
 			onLoad={() => setLoaded(true)}
 			onError={() => setFailed(true)}
@@ -54,7 +48,6 @@ function GalleryImage({
 }
 
 export interface ImageGalleryProps extends React.ComponentProps<"div"> {
-	/** Product images, typically `ProductDetail.images`. */
 	images: ReadonlyArray<ProductImage>;
 	/**
 	 * Transient image to overlay on the active slide (e.g. a hovered variant
@@ -64,7 +57,6 @@ export interface ImageGalleryProps extends React.ComponentProps<"div"> {
 	previewSrc?: string | null;
 }
 
-/** Product image carousel with a synced thumbnail strip. */
 export function ImageGallery({ images, previewSrc, className, ...props }: ImageGalleryProps) {
 	const [api, setApi] = React.useState<CarouselApi>();
 	const [selected, setSelected] = React.useState(0);
@@ -107,7 +99,7 @@ export function ImageGallery({ images, previewSrc, className, ...props }: ImageG
 					<CarouselContent>
 						{images.map((image, index) => (
 							<CarouselItem key={`${image.url}-${index}`}>
-								<div className="relative overflow-hidden rounded-lg bg-white">
+								<div className="relative overflow-hidden rounded-lg bg-muted">
 									{/* Invisible sizer: a square, plus the thumbnail strip's own
                       height when there's no strip — so a single image fills the
                       same footprint as a multi-image gallery. */}
@@ -132,13 +124,13 @@ export function ImageGallery({ images, previewSrc, className, ...props }: ImageG
 						src={previewSrc}
 						alt=""
 						aria-hidden
-						className="pointer-events-none absolute inset-0 size-full rounded-lg bg-white object-contain"
+						className="pointer-events-none absolute inset-0 size-full rounded-lg bg-muted object-cover"
 					/>
 				) : null}
 			</div>
 
 			{multiple ? (
-				<div className="scrollbar-hidden flex items-start gap-2 overflow-x-auto">
+				<div className="flex items-start gap-2 overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden">
 					{images.map((image, index) => (
 						<button
 							key={`thumb-${image.url}-${index}`}
@@ -149,7 +141,7 @@ export function ImageGallery({ images, previewSrc, className, ...props }: ImageG
 							aria-label={`View image ${index + 1}`}
 							aria-current={index === selected}
 							className={cn(
-								"relative size-14 shrink-0 overflow-hidden rounded-md border bg-white transition-opacity",
+								"relative size-14 shrink-0 overflow-hidden rounded-md border bg-muted transition-opacity",
 								index === selected
 									? "border-ring ring-1 ring-ring"
 									: "opacity-60 hover:opacity-100",

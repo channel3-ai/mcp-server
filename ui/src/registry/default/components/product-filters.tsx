@@ -1,3 +1,4 @@
+import * as React from "react";
 import type {
 	Brand,
 	Category,
@@ -6,8 +7,9 @@ import type {
 	Website,
 } from "@channel3/sdk/resources";
 import { Check, ChevronDown, Pipette, Plus, X } from "lucide-react";
-import * as React from "react";
 import { HexColorPicker } from "react-colorful";
+
+import { cn } from "@/lib/utils";
 import {
 	Accordion,
 	AccordionContent,
@@ -17,19 +19,17 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
-import { cn } from "@/lib/utils";
-import { useAsyncOptions } from "@/registry/default/hooks/use-async-options";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
 	AGE_OPTIONS,
 	AVAILABILITY_OPTIONS,
-	CONDITION_OPTIONS,
 	categoryAttributeGroups,
+	CONDITION_OPTIONS,
 	countActiveFilters,
 	countCategoryAttributes,
-	type DimensionRange,
 	deriveAttributes,
+	type DimensionRange,
 	EMPTY_FILTERS,
 	facetCounts,
 	GENDER_OPTIONS,
@@ -42,10 +42,10 @@ import {
 	WEIGHT_UNIT_OPTIONS,
 	type WeightUnit,
 } from "@/registry/default/lib/search";
+import { useAsyncOptions } from "@/registry/default/hooks/use-async-options";
 
 /** Searches brands by free text (wraps `client.brands.search`). */
 export type BrandSearcher = (query: string) => Promise<Brand[]>;
-/** Searches websites by free text, returning the SDK {@link Website} shape. */
 export type WebsiteSearcher = (query: string) => Promise<Website[]>;
 /** Searches categories by free text (wraps `client.categories.search`). */
 export type CategorySearcher = (query: string) => Promise<CategorySummary[]>;
@@ -58,7 +58,6 @@ type FiltersUpdater =
 
 interface ProductFiltersContextValue {
 	filters: SearchFiltersState;
-	/** Merge a patch (or updater) into the filter state. */
 	update: (updater: FiltersUpdater) => void;
 	searchBrands?: BrandSearcher;
 	searchWebsites?: WebsiteSearcher;
@@ -81,17 +80,11 @@ function useProductFilters(component: string): ProductFiltersContextValue {
 }
 
 export interface ProductFiltersProps extends Omit<React.ComponentProps<"div">, "onChange"> {
-	/** Current filter state (controlled). */
 	value: SearchFiltersState;
-	/** Called with the next filter state on any change. */
 	onChange: (filters: SearchFiltersState) => void;
-	/** Enables the Brands field. Wrap `client.brands.search` on your server. */
 	searchBrands?: BrandSearcher;
-	/** Enables the Websites field. Returns SDK `Website` results on your server. */
 	searchWebsites?: WebsiteSearcher;
-	/** Enables the Category field. Wrap `client.categories.search` on your server. */
 	searchCategories?: CategorySearcher;
-	/** Loads a category's attributes on select. Wrap `client.categories.retrieve`. */
 	getCategory?: CategoryLoader;
 	/** Reveal a per-color target-share slider on each selected color. Defaults to off. */
 	colorPercentages?: boolean;
@@ -108,7 +101,6 @@ function Root({
 	children,
 	...rest
 }: ProductFiltersProps & { children: React.ReactNode }) {
-	// Holds the latest value so several synchronous `update` calls compose.
 	const ref = React.useRef(value);
 	ref.current = value;
 
@@ -197,11 +189,6 @@ function Chip({ children, onRemove }: { children: React.ReactNode; onRemove: () 
 
 const TOGGLE_FACET_CLASS = "flex flex-wrap gap-1.5";
 
-/**
- * Shared compact token used for every filter option/selection (fixed-list
- * toggles and the brand/category chips) so a selected condition reads the same
- * as a selected category. Color keeps its own swatch-based UI.
- */
 const FILTER_PILL_BASE =
 	"inline-flex h-7 items-center gap-1 rounded-full border px-2.5 text-xs font-medium whitespace-nowrap transition-colors outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50";
 
@@ -214,14 +201,9 @@ function filterPillClass(selected: boolean) {
 	);
 }
 
-/**
- * Hide the browser's native number spinner buttons (they can't be themed
- * cross-browser). The price slider covers stepping; the field stays typeable.
- */
 const NO_SPINNER_CLASS =
 	"[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
 
-/** Parse a numeric input's raw value to a finite number, or `null` when blank/invalid. */
 function parseNumberInput(raw: string): number | null {
 	if (raw.trim() === "") {
 		return null;
@@ -230,15 +212,9 @@ function parseNumberInput(raw: string): number | null {
 	return Number.isFinite(value) ? value : null;
 }
 
-/** Thin, theme-matched scrollbar for option/result lists. */
 const THIN_SCROLLBAR_CLASS =
 	"[scrollbar-width:thin] [scrollbar-color:var(--border)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border";
 
-/**
- * Reads a thumb value from a Slider `onValueChange` payload. Radix passes a
- * `number[]`; Base UI types the value as `number | number[]`. Normalizing here
- * keeps the component compiling against either base.
- */
 function sliderThumb(value: number | readonly number[], index: number): number | undefined {
 	if (Array.isArray(value)) {
 		return value[index];
@@ -342,12 +318,6 @@ type ToggleFacetProps<V extends string> =
 			onChange: (value: V[]) => void;
 	  };
 
-/**
- * A facet rendered as a wrapping set of {@link FILTER_PILL_BASE} toggle pills
- * over a fixed option list. Plain `aria-pressed` buttons (rather than a toggle
- * primitive) keep the component base-agnostic and let every facet share the one
- * filter-pill token.
- */
 function ToggleFacet<V extends string>(props: ToggleFacetProps<V>) {
 	const isSelected = (value: V) =>
 		props.type === "single" ? props.value === value : props.value.includes(value);
@@ -464,10 +434,6 @@ function Availability() {
 	);
 }
 
-/**
- * A compact unit picker: a small trigger showing the current unit that opens a
- * short list. Lives in the dimensions units bar (not on each input row).
- */
 function UnitDropdown<V extends string>({
 	label,
 	options,
@@ -493,7 +459,7 @@ function UnitDropdown<V extends string>({
 				{value}
 				<ChevronDown className="size-3 text-muted-foreground" aria-hidden />
 			</PopoverTrigger>
-			<PopoverContent align="end" className="w-auto min-w-18 p-1">
+			<PopoverContent align="end" className="w-auto min-w-[4.5rem] p-1">
 				<ul>
 					{options.map((option) => (
 						<li key={option.value}>
@@ -518,7 +484,6 @@ function UnitDropdown<V extends string>({
 	);
 }
 
-/** A labelled min/max number-input pair for one physical dimension. */
 function DimensionRow({
 	label,
 	range,
@@ -804,7 +769,6 @@ function OptionList<T>({
 	);
 }
 
-/** Always-open search field + results, for use inside an existing popover. */
 function InlineTypeahead<T>({
 	placeholder,
 	fetcher,
@@ -840,7 +804,6 @@ function InlineTypeahead<T>({
 	);
 }
 
-/** A button that opens a popover with a search field, for the stacked panel. */
 function Typeahead<T>({
 	triggerLabel,
 	...rest
@@ -967,7 +930,6 @@ function Brands() {
 	);
 }
 
-/** Strips the scheme (and any trailing slash) so website chips read as bare domains. */
 function websiteLabel(website: Website): string {
 	return website.url.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
@@ -1274,18 +1236,10 @@ function FacetPopover({
 }
 
 export interface ProductFiltersBarProps extends React.ComponentProps<"div"> {
-	/** Upper bound for the Price slider. Defaults to 1000. */
 	priceMax?: number;
-	/** Step for the Price slider. Defaults to 10. */
 	priceStep?: number;
 }
 
-/**
- * Horizontal filter bar: each facet is a dropdown button showing its active
- * count, with a trailing "Clear all". Use inside `<ProductFiltersRoot>` (or
- * pass `filtersLayout="bar"` to {@link ProductSearch}) for an inline filter row
- * under a search bar.
- */
 function Bar({ priceMax, priceStep, className, ...rest }: ProductFiltersBarProps) {
 	const { filters, update, searchBrands, searchWebsites, searchCategories } =
 		useProductFilters("ProductFiltersBar");
@@ -1374,7 +1328,6 @@ function Bar({ priceMax, priceStep, className, ...rest }: ProductFiltersBarProps
 	);
 }
 
-/** One collapsible facet in the sidebar accordion: label + active-count badge. */
 function FacetSection({
 	value,
 	label,
@@ -1414,9 +1367,7 @@ function DefaultLayout() {
 	const counts = facetCounts(filters);
 	const attributeGroups = categoryAttributeGroups(filters);
 
-	// Start with only the facets that already carry a value expanded, so the panel
-	// is compact but never hides active filters. Computed once from the initial
-	// filters so later edits don't reopen/close sections under the user.
+	// Seed from the initial filters only — later edits must not reopen sections.
 	const [defaultOpen] = React.useState<string[]>(() => {
 		const initial = facetCounts(filters);
 		const entries: Array<[string, number]> = [
@@ -1501,20 +1452,6 @@ function DefaultLayout() {
 	);
 }
 
-/**
- * Compound, configurable product-search filter panel. Use
- * `<ProductFilters value=... onChange=... />` for the default stacked panel,
- * `<ProductFiltersRoot><ProductFiltersBar/></ProductFiltersRoot>` for a
- * horizontal popover bar, or compose `<ProductFiltersRoot>` with the sub-fields
- * you want (`ProductFiltersPrice`, `ProductFiltersGender`, …) in any
- * arrangement.
- *
- * Filter state is the UI-friendly {@link SearchFiltersState}; convert it with
- * `toSearchFilters` on your server before calling `client.products.search`.
- * Brands/Category fields render only when their (server-side) fetchers are
- * provided; attribute filters appear as one section per selected category
- * (sidebar) or one popover per category (bar).
- */
 export function ProductFilters({ className, ...props }: ProductFiltersProps) {
 	return (
 		<Root className={cn("w-full", className)} {...props}>
@@ -1524,18 +1461,18 @@ export function ProductFilters({ className, ...props }: ProductFiltersProps) {
 }
 
 export {
-	ActiveSummary as ProductFiltersActiveSummary,
-	Age as ProductFiltersAge,
-	Attributes as ProductFiltersAttributes,
-	Availability as ProductFiltersAvailability,
-	Bar as ProductFiltersBar,
-	Brands as ProductFiltersBrands,
-	CategoryField as ProductFiltersCategory,
-	Colors as ProductFiltersColors,
-	Condition as ProductFiltersCondition,
-	DimensionsField as ProductFiltersDimensions,
-	Gender as ProductFiltersGender,
-	Price as ProductFiltersPrice,
 	Root as ProductFiltersRoot,
+	Bar as ProductFiltersBar,
+	ActiveSummary as ProductFiltersActiveSummary,
+	Price as ProductFiltersPrice,
+	Gender as ProductFiltersGender,
+	Age as ProductFiltersAge,
+	Condition as ProductFiltersCondition,
+	Availability as ProductFiltersAvailability,
+	DimensionsField as ProductFiltersDimensions,
+	Colors as ProductFiltersColors,
+	Brands as ProductFiltersBrands,
 	Websites as ProductFiltersWebsites,
+	CategoryField as ProductFiltersCategory,
+	Attributes as ProductFiltersAttributes,
 };

@@ -1,4 +1,4 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
+import type { Product } from "@channel3/sdk/resources";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import * as React from "react";
@@ -42,11 +42,11 @@ export function BrowseView({
 	saved: SavedProducts;
 	initialQuery?: string;
 	initialImageUrl?: string;
-	initialResults?: ProductDetail[];
+	initialResults?: Product[];
 	initialNextPageToken?: string | null;
-	onSelect: (product: ProductDetail) => void;
-	onPrefetchProduct?: (product: ProductDetail) => void;
-	onResultsChange?: (products: ProductDetail[]) => void;
+	onSelect: (product: Product) => void;
+	onPrefetchProduct?: (product: Product) => void;
+	onResultsChange?: (products: Product[]) => void;
 	onBack?: () => void;
 	onExit?: () => void;
 	locale?: string;

@@ -1,51 +1,39 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
-import type * as React from "react";
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import * as React from "react";
+import type { OptionValue, Product } from "@channel3/sdk/resources";
+
 import { cn } from "@/lib/utils";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { ProductCard, ProductCardSkeleton } from "@/registry/default/components/product-card";
 
-type OptionValue = ProductDetail.Variants.Option.Value;
-
 export interface ProductGridProps extends Omit<React.ComponentProps<"div">, "onSelect"> {
-	/** Products to render, typically a page of search results. */
-	products: ReadonlyArray<ProductDetail>;
-	/** Per-product destination URL; makes each card a crawlable `<a href>`. */
-	getHref?: (product: ProductDetail) => string;
-	/** Forwarded to each {@link ProductCard}. */
-	onSelect?: (product: ProductDetail) => void;
-	/** Forwarded to each {@link ProductCard}; prefetch hook on hover/focus/touch. */
-	onPreload?: (product: ProductDetail) => void;
-	/** Forwarded to each {@link ProductCard} for color-swatch navigation. */
-	onSelectVariant?: (product: ProductDetail, value: OptionValue) => void;
-	/** Forwarded to each {@link ProductCard}; show color swatches below the price. */
+	products: ReadonlyArray<Product>;
+	getHref?: (product: Product) => string;
+	onSelect?: (product: Product) => void;
+	onPreload?: (product: Product) => void;
+	onSelectVariant?: (product: Product, value: OptionValue) => void;
 	showSwatches?: boolean;
-	cardAction?: (product: ProductDetail) => React.ReactNode;
-	/** Show skeleton placeholders instead of products. */
 	loading?: boolean;
-	/** Number of skeletons to render while loading. */
 	skeletonCount?: number;
-	/** Custom node rendered when there are no products and not loading. */
 	emptyState?: React.ReactNode;
-	/** Locale override for price formatting. */
 	locale?: string;
+	/** Optional action rendered over each card (e.g. a save toggle). */
+	cardAction?: (product: Product) => React.ReactNode;
 }
 
-/** First row of cards (widest layout) loaded eagerly as likely-LCP imagery. */
 const PRIORITY_COUNT = 4;
 
-/** Responsive grid of {@link ProductCard}s with loading and empty states. */
 export function ProductGrid({
 	products,
 	getHref,
 	onSelect,
 	onPreload,
 	onSelectVariant,
-	cardAction,
 	showSwatches = true,
 	loading = false,
 	skeletonCount = 8,
 	emptyState,
 	locale,
+	cardAction,
 	className,
 	...props
 }: ProductGridProps) {
@@ -86,19 +74,20 @@ export function ProductGrid({
 			{products.map((product, index) => {
 				const card = (
 					<ProductCard
-						key={product.id}
 						product={product}
 						href={getHref?.(product)}
 						onSelect={onSelect}
 						onPreload={onPreload}
-						onSelectVariant={onSelectVariant}
+						onSelectVariant={
+							onSelectVariant ? (value) => onSelectVariant(product, value) : undefined
+						}
 						showSwatches={showSwatches}
 						priority={index < PRIORITY_COUNT}
 						locale={locale}
 					/>
 				);
 				if (!cardAction) {
-					return card;
+					return <React.Fragment key={product.id}>{card}</React.Fragment>;
 				}
 				return (
 					<div key={product.id} className="relative h-full">

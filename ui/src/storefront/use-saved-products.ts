@@ -1,8 +1,8 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
+import type { Product } from "@channel3/sdk/resources";
 import { type UseQueryResult, useQueries } from "@tanstack/react-query";
 import * as React from "react";
 
-import { pickImage } from "@/registry/default/lib/format";
+import { pickImage, productImageUrl } from "@/registry/default/lib/format";
 import { trackEvent } from "@/storefront/analytics";
 import type { StorefrontBridge } from "@/storefront/bridge";
 import { detailQueryOptions } from "@/storefront/detail-query";
@@ -21,7 +21,7 @@ type SavedItemStatus = "pending" | "ready" | "unavailable";
 
 export interface SavedItem {
 	entry: SavedEntry;
-	product: ProductDetail | null;
+	product: Product | null;
 	status: SavedItemStatus;
 }
 
@@ -55,7 +55,7 @@ export function useSavedProducts(bridge: StorefrontBridge, hydrate: boolean) {
 			enabled: hydrate,
 		})),
 		combine: React.useCallback(
-			(results: UseQueryResult<ProductDetail>[]): SavedItem[] =>
+			(results: UseQueryResult<Product>[]): SavedItem[] =>
 				entries.map((entry, index) => {
 					const query = results[index];
 					if (query?.data) {
@@ -70,13 +70,16 @@ export function useSavedProducts(bridge: StorefrontBridge, hydrate: boolean) {
 		),
 	});
 
-	const toggle = React.useCallback((product: ProductDetail) => {
+	const toggle = React.useCallback((product: Product) => {
 		const brands = (product.brands ?? []).map((brand) => brand.name);
 		const change = toggleSaved({
 			id: product.id,
 			title: product.title,
 			brands: brands.length > 0 ? brands : undefined,
-			imageUrl: pickImage(product.images, { preferCleaned: true })?.url,
+			imageUrl: (() => {
+				const image = pickImage(product.images);
+				return image ? productImageUrl(image, { preferCleaned: true }) : undefined;
+			})(),
 		});
 		if (change) {
 			trackEvent(change.type === "added" ? "saved_added" : "saved_removed", {

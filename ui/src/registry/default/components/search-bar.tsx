@@ -1,17 +1,14 @@
-import { ImageIcon, Search, X } from "lucide-react";
 import * as React from "react";
+import { ImageIcon, Search, X } from "lucide-react";
+
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 
 export interface SearchBarProps extends Omit<React.ComponentProps<"form">, "onSubmit"> {
-	/** Current query text (controlled). */
 	value: string;
-	/** Called as the text changes. */
 	onValueChange: (value: string) => void;
-	/** Called on submit (Enter or the search button) with the current value. */
 	onSubmit?: (value: string) => void;
-	/** Placeholder text. Defaults to "Search products". */
 	placeholder?: string;
 	/**
 	 * Enable image search. When set, a button lets the shopper pick an image file;
@@ -19,15 +16,9 @@ export interface SearchBarProps extends Omit<React.ComponentProps<"form">, "onSu
 	 * `client.products.searchByImage`.
 	 */
 	onImageSelected?: (file: File) => void;
-	/** Show a busy state on the submit affordance. */
 	loading?: boolean;
 }
 
-/**
- * Controlled search input with submit-on-Enter, a clear button, and an optional
- * image-search trigger. Purely presentational: wire `onSubmit`/`onValueChange`
- * to your search state (e.g. {@link useProductSearch}).
- */
 export function SearchBar({
 	value,
 	onValueChange,

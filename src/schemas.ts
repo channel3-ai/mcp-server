@@ -63,5 +63,9 @@ export const GetSimilarSchema = z.object({
 
 export const ProductIdRequestSchema = z.object({
 	product_id: z.string().describe("Canonical product ID."),
+	selected_options: z
+		.record(z.string(), z.string())
+		.optional()
+		.describe("Variant configuration as `{ optionName: label }` for re-resolving offers."),
 	thread_id: threadIdPassthrough,
 });

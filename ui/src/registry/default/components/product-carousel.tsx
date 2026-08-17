@@ -1,50 +1,35 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
 import type * as React from "react";
+import type { OptionValue, Product } from "@channel3/sdk/resources";
+
+import { cn } from "@/lib/utils";
 import {
 	Carousel,
 	CarouselContent,
 	CarouselItem,
 	CarouselNext,
 	CarouselPrevious,
-	wheelGesturesPlugin,
 } from "@/components/ui/carousel";
-import { cn } from "@/lib/utils";
 import { ProductCard, ProductCardSkeleton } from "@/registry/default/components/product-card";
-
-type OptionValue = ProductDetail.Variants.Option.Value;
 
 export interface ProductCarouselProps
 	extends Omit<React.ComponentProps<"div">, "onSelect" | "title"> {
-	/** Products to render as horizontally scrollable cards. */
-	products: ReadonlyArray<ProductDetail>;
-	/** Per-product destination URL; makes each card a crawlable `<a href>`. */
-	getHref?: (product: ProductDetail) => string;
-	/** Forwarded to each {@link ProductCard}. */
-	onSelect?: (product: ProductDetail) => void;
-	/** Forwarded to each {@link ProductCard}; prefetch hook on hover/focus/touch. */
-	onPreload?: (product: ProductDetail) => void;
-	/** Forwarded to each {@link ProductCard} for color-swatch navigation. */
-	onSelectVariant?: (product: ProductDetail, value: OptionValue) => void;
-	/** Forwarded to each {@link ProductCard}; show color swatches below the price. */
+	products: ReadonlyArray<Product>;
+	getHref?: (product: Product) => string;
+	onSelect?: (product: Product) => void;
+	onPreload?: (product: Product) => void;
+	onSelectVariant?: (product: Product, value: OptionValue) => void;
 	showSwatches?: boolean;
-	/** Optional heading shown above the row, next to the nav controls. */
 	title?: React.ReactNode;
-	/** Show skeleton placeholders instead of products. */
 	loading?: boolean;
-	/** Number of skeletons to render while loading. */
 	skeletonCount?: number;
-	/** Locale override for price formatting. */
 	locale?: string;
-	/** Per-item width/responsive basis. Override to show more cards per view. */
 	itemClassName?: string;
-	/** How many leading cards load eagerly at high priority. Defaults to 4. */
 	priorityCount?: number;
 }
 
 const ITEM_BASIS = "basis-1/2 sm:basis-1/2 md:basis-1/3 lg:basis-1/4";
 const NAV_CLASS = "static size-8 translate-x-0 translate-y-0";
 
-/** Horizontally scrollable row of {@link ProductCard}s (e.g. "More like this"). */
 export function ProductCarousel({
 	products,
 	getHref,
@@ -67,12 +52,7 @@ export function ProductCarousel({
 	}
 
 	return (
-		<Carousel
-			opts={{ align: "start" }}
-			plugins={[wheelGesturesPlugin]}
-			className={cn("w-full", className)}
-			{...props}
-		>
+		<Carousel opts={{ align: "start" }} className={cn("w-full", className)} {...props}>
 			<div className="mb-3 flex items-center justify-between gap-2">
 				<div className="text-base font-medium">{title}</div>
 				<div className="flex gap-2">
@@ -87,20 +67,24 @@ export function ProductCarousel({
 								<ProductCardSkeleton />
 							</CarouselItem>
 						))
-				: products.map((product, index) => (
-						<CarouselItem key={product.id} className={itemClassName}>
-							<ProductCard
-								product={product}
-								href={getHref?.(product)}
-								onSelect={onSelect}
-								onPreload={onPreload}
-								onSelectVariant={onSelectVariant}
-								showSwatches={showSwatches}
-								priority={index < priorityCount}
-								locale={locale}
-							/>
-						</CarouselItem>
-					))}
+					: products.map((product, index) => (
+							<CarouselItem key={product.id} className={itemClassName}>
+								<ProductCard
+									product={product}
+									href={getHref?.(product)}
+									onSelect={onSelect}
+									onPreload={onPreload}
+									onSelectVariant={
+										onSelectVariant
+											? (value) => onSelectVariant(product, value)
+											: undefined
+									}
+									showSwatches={showSwatches}
+									priority={index < priorityCount}
+									locale={locale}
+								/>
+							</CarouselItem>
+						))}
 			</CarouselContent>
 		</Carousel>
 	);

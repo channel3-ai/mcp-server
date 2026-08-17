@@ -1,26 +1,24 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
-import { SlidersHorizontal } from "lucide-react";
 import * as React from "react";
-import { Button } from "@/components/ui/button";
+import type { OptionValue, Product } from "@channel3/sdk/resources";
+import { SlidersHorizontal } from "lucide-react";
+
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ProductGrid } from "@/registry/default/components/product-grid";
+import { SearchBar } from "@/registry/default/components/search-bar";
 import {
 	type BrandSearcher,
 	type CategoryLoader,
 	type CategorySearcher,
+	type WebsiteSearcher,
 	ProductFilters,
 	ProductFiltersBar,
 	ProductFiltersRoot,
-	type WebsiteSearcher,
 } from "@/registry/default/components/product-filters";
-import { ProductGrid } from "@/registry/default/components/product-grid";
-import { SearchBar } from "@/registry/default/components/search-bar";
 import { type SearchFetcher, useProductSearch } from "@/registry/default/hooks/use-product-search";
-
-type OptionValue = ProductDetail.Variants.Option.Value;
 
 const filterTransition = "duration-200 ease-out";
 
-/** Vertical reveal (bar layout, sidebar on small screens). */
 function filterCollapseClass(open: boolean) {
 	return cn(
 		"grid transition-[grid-template-rows,opacity]",
@@ -45,48 +43,23 @@ function readBase64(file: File): Promise<string> {
 export interface ProductSearchProps extends Omit<React.ComponentProps<"div">, "onSelect"> {
 	/** Server-side search fetcher (wraps `client.products.search` / `searchByImage`). */
 	fetchSearch: SearchFetcher;
-	/** Enables the Brands filter. */
 	searchBrands?: BrandSearcher;
-	/** Enables the Websites filter. */
 	searchWebsites?: WebsiteSearcher;
-	/** Enables the Category filter. */
 	searchCategories?: CategorySearcher;
-	/** Loads a category's attributes on select (enables the Attributes filter). */
 	getCategory?: CategoryLoader;
-	/** Filter presentation: a left `sidebar` (default) or an inline popover `bar`. */
 	filtersLayout?: "sidebar" | "bar";
-	/** Reveal a per-color target-share slider in the Color filter. */
 	colorPercentages?: boolean;
-	/** Enable image search (adds an upload button to the search bar). */
 	imageSearch?: boolean;
-	/** Run an initial search on mount (e.g. show a default page). */
 	searchOnMount?: boolean;
-	/**
-	 * Load more pages via infinite scroll as the list scrolls into view. Set to
-	 * `false` to show only the first page (no sentinel). Defaults to `true`.
-	 */
 	paginate?: boolean;
-	/** Initial query text. */
 	initialQuery?: string;
-	/** Placeholder for the search input. */
 	placeholder?: string;
-	/** Fired when a result card is activated. */
-	onSelect?: (product: ProductDetail) => void;
-	/** Fired when a color swatch on a result is clicked. */
-	onSelectVariant?: (product: ProductDetail, value: OptionValue) => void;
-	/** Show color swatches on result cards. */
+	onSelect?: (product: Product) => void;
+	onSelectVariant?: (product: Product, value: OptionValue) => void;
 	showSwatches?: boolean;
-	/** Locale override for price formatting. */
 	locale?: string;
 }
 
-/**
- * Batteries-included search experience: a {@link SearchBar}, the configurable
- * {@link ProductFilters} panel, and a {@link ProductGrid} of results with
- * infinite scroll — all wired to {@link useProductSearch}. Pass server-side
- * fetchers so the Channel3 API key never reaches the client. Compose the same
- * pieces yourself for a custom layout.
- */
 export function ProductSearch({
 	fetchSearch,
 	searchBrands,

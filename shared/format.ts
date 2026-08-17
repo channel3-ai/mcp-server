@@ -1,11 +1,10 @@
-import type { AvailabilityStatus, Price, ProductOffer } from "@channel3/sdk/resources";
+import type { OfferAvailabilityStatus, Price, ProductOffer } from "@channel3/sdk/resources";
 
-const IN_STOCK: ReadonlySet<AvailabilityStatus> = new Set<AvailabilityStatus>([
+const IN_STOCK: ReadonlySet<OfferAvailabilityStatus> = new Set<OfferAvailabilityStatus>([
 	"InStock",
-	"LimitedAvailability",
 ]);
 
-export function isInStock(status: AvailabilityStatus): boolean {
+export function isInStock(status: OfferAvailabilityStatus): boolean {
 	return IN_STOCK.has(status);
 }
 

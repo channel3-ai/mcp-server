@@ -1,10 +1,11 @@
-import type { ProductOffer } from "@channel3/sdk/resources";
-import { ExternalLink } from "lucide-react";
 import * as React from "react";
+import { ExternalLink } from "lucide-react";
+import type { ProductOffer } from "@channel3/sdk/resources";
+
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
-import { cn } from "@/lib/utils";
 import {
 	formatCurrency,
 	formatDomain,
@@ -14,16 +15,9 @@ import {
 } from "@/registry/default/lib/format";
 
 export interface OffersListProps extends React.ComponentProps<"div"> {
-	/** Merchant offers for a product, from `ProductDetail.offers`. */
 	offers: ReadonlyArray<ProductOffer>;
-	/**
-	 * Called when a merchant's buy link is clicked. The link still navigates to
-	 * the affiliate-tracked `offer.url`; use this for analytics.
-	 */
 	onOfferClick?: (offer: ProductOffer) => void;
-	/** Label for each buy link. */
 	actionLabel?: string;
-	/** Locale override for price formatting. */
 	locale?: string;
 	/** `rel` for each buy link. Use `"sponsored noopener noreferrer"` for affiliate links. */
 	buyLinkRel?: string;
@@ -31,11 +25,6 @@ export interface OffersListProps extends React.ComponentProps<"div"> {
 
 const byPrice = (a: ProductOffer, b: ProductOffer) => a.price.price - b.price.price;
 
-/**
- * Compares merchant offers for a product: in-stock merchants first (cheapest
- * leads), then any out-of-stock merchants grouped under a muted header. Every
- * row keeps an affiliate-tracked buy link.
- */
 export function OffersList({
 	offers,
 	onOfferClick,
@@ -45,8 +34,6 @@ export function OffersList({
 	className,
 	...props
 }: OffersListProps) {
-	// Sort once, then split: the cheapest in-stock offer (or, failing that, the
-	// cheapest overall) is the lead, matching `leadOffer` without a second sort.
 	const { inStock, outOfStock, lead } = React.useMemo(() => {
 		const sorted = [...offers].sort(byPrice);
 		const purchasable = sorted.filter((offer) => isInStock(offer.availability));
