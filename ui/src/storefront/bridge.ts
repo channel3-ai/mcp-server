@@ -1,4 +1,4 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
+import type { Product } from "@channel3/sdk/resources";
 import type { App } from "@modelcontextprotocol/ext-apps/react";
 import {
 	type GetDetailsResult,
@@ -19,14 +19,18 @@ export interface BrowseInput {
 }
 
 export interface BrowsePage {
-	products: ProductDetail[];
+	products: Product[];
 	nextPageToken: string | null;
+}
+
+export interface GetProductOptions {
+	selectedOptions?: Record<string, string>;
 }
 
 export interface StorefrontBridge {
 	browse(input: BrowseInput): Promise<BrowsePage>;
-	getSimilar(productId: string, limit: number): Promise<ProductDetail[]>;
-	getProduct(productId: string): Promise<ProductDetail>;
+	getSimilar(productId: string, limit: number): Promise<Product[]>;
+	getProduct(productId: string, options?: GetProductOptions): Promise<Product>;
 	getPriceHistory(productId: string): Promise<GetPriceHistoryResult>;
 	openLink(url: string): Promise<void>;
 	requestFullscreen(): Promise<boolean>;
@@ -82,7 +86,7 @@ export class AppBridge implements StorefrontBridge {
 		return { products: page.products, nextPageToken: page.next_page_token };
 	}
 
-	async getSimilar(productId: string, limit: number): Promise<ProductDetail[]> {
+	async getSimilar(productId: string, limit: number): Promise<Product[]> {
 		const result = await this.app.callServerTool({
 			name: "get_similar",
 			arguments: { product_id: productId, limit, ...threadArg() },
@@ -94,10 +98,14 @@ export class AppBridge implements StorefrontBridge {
 		).products;
 	}
 
-	async getProduct(productId: string): Promise<ProductDetail> {
+	async getProduct(productId: string, options?: GetProductOptions): Promise<Product> {
 		const result = await this.app.callServerTool({
 			name: "get_details",
-			arguments: { product_id: productId, ...threadArg() },
+			arguments: {
+				product_id: productId,
+				...(options?.selectedOptions ? { selected_options: options.selectedOptions } : {}),
+				...threadArg(),
+			},
 		});
 		return structuredContent<GetDetailsResult>(result, "get_details", GetDetailsResultSchema)
 			.product;
@@ -108,11 +116,18 @@ export class AppBridge implements StorefrontBridge {
 			name: "get_price_history",
 			arguments: { product_id: productId, ...threadArg() },
 		});
-		return structuredContent<GetPriceHistoryResult>(
+		const parsed = structuredContent<GetPriceHistoryResult>(
 			result,
 			"get_price_history",
 			GetPriceHistoryResultSchema,
 		);
+		return {
+			...parsed,
+			history: parsed.history.map((point) => ({
+				...point,
+				timestamp: new Date(point.timestamp as unknown as string),
+			})),
+		};
 	}
 
 	async openLink(url: string): Promise<void> {

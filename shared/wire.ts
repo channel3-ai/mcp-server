@@ -1,8 +1,7 @@
 import type {
-	PriceHistory,
-	PriceHistoryPoint,
+	PriceHistoryResponse,
 	PriceStatistics,
-	ProductDetail,
+	Product,
 	ProductOffer,
 } from "@channel3/sdk/resources";
 import { z } from "zod";
@@ -33,7 +32,7 @@ export const ProductSummarySchema = z.looseObject({
 
 // The SDK owns the product shape, so results validate the two fields every consumer
 // keys on and pass the rest through. `_ProductAligns` keeps that identity a subset of
-// the SDK type, which is what lets a parsed product widen to `ProductDetail`.
+// the SDK type, which is what lets a parsed product widen to `Product`.
 const ProductIdentitySchema = z.object({
 	id: z.string(),
 	title: z.string(),
@@ -119,6 +118,7 @@ export const GetDetailsResultSchema = z.object({
 });
 
 export const GetPriceHistoryResultSchema = z.object({
+	canonical_product_id: z.string(),
 	history: z.array(PriceHistoryPointSchema),
 	statistics: PriceStatisticsSchema.nullable(),
 });
@@ -135,18 +135,18 @@ export const MountResultSchema = z.object({
 	...seqSchema,
 });
 
-export type ProductsPageResult = { products: ProductDetail[]; next_page_token: string | null };
-export type GetDetailsResult = { product: ProductDetail };
-export type GetPriceHistoryResult = Pick<PriceHistory, "history" | "statistics">;
+export type ProductsPageResult = { products: Product[]; next_page_token: string | null };
+export type GetDetailsResult = { product: Product };
+export type GetPriceHistoryResult = Pick<
+	PriceHistoryResponse,
+	"canonical_product_id" | "history" | "statistics"
+>;
 export type MountResult = Omit<z.infer<typeof MountResultSchema>, "products"> & {
-	products: ProductDetail[];
+	products: Product[];
 };
 
-type _ProductAligns = Assert<AlignsWith<ProductDetail, z.infer<typeof ProductIdentitySchema>>>;
+type _ProductAligns = Assert<AlignsWith<Product, z.infer<typeof ProductIdentitySchema>>>;
 type _ProductOfferAligns = Assert<AlignsWith<z.infer<typeof ProductOfferSchema>, ProductOffer>>;
-type _PriceHistoryPointAligns = Assert<
-	AlignsWith<PriceHistoryPoint, z.infer<typeof PriceHistoryPointSchema>>
->;
 type _PriceStatisticsAligns = Assert<
 	AlignsWith<PriceStatistics, z.infer<typeof PriceStatisticsSchema>>
 >;

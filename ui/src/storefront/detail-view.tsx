@@ -1,10 +1,9 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
+import type { Product } from "@channel3/sdk/resources";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
 	ProductDetailsAttributes,
@@ -22,13 +21,12 @@ import { useVariantSelection } from "@/registry/default/hooks/use-variant-select
 import { trackEvent } from "@/storefront/analytics";
 import type { StorefrontBridge } from "@/storefront/bridge";
 import { detailQueryOptions } from "@/storefront/detail-query";
-import { PriceChart } from "@/storefront/price-chart";
 import { ProductSaveRow } from "@/storefront/save-toggle";
 import type { PriceFocusStats } from "@/storefront/types";
 import type { SavedProducts } from "@/storefront/use-saved-products";
 
 export interface DetailFocus {
-	product: ProductDetail;
+	product: Product;
 	priceStats?: PriceFocusStats;
 }
 
@@ -41,10 +39,10 @@ export function DetailView({
 	onFocusChange,
 	locale,
 }: {
-	product: ProductDetail;
+	product: Product;
 	bridge: StorefrontBridge;
 	saved: SavedProducts;
-	onSelect: (product: ProductDetail) => void;
+	onSelect: (product: Product) => void;
 	onBack?: () => void;
 	onFocusChange?: (focus: DetailFocus) => void;
 	locale?: string;
@@ -58,15 +56,19 @@ export function DetailView({
 
 	const base = details.data ?? initialProduct;
 	const hydrating = details.isPending;
-	const priceHistory = priceHistoryQuery.data?.history ?? [];
-	const showPriceHistory = Boolean(priceHistoryQuery.data?.statistics) || priceHistory.length > 0;
+	const priceHistory = priceHistoryQuery.data;
 
 	const resolveVariant = React.useCallback<VariantResolver>(
-		({ product, value }) => {
-			const productId = value.product_id;
-			return productId
-				? queryClient.fetchQuery(detailQueryOptions(bridge, productId))
-				: Promise.resolve(product);
+		({ product, value, selection }) => {
+			const productId = value.product_id ?? product.id;
+			const selectedOptions = value.product_id ? undefined : selection;
+			return queryClient.fetchQuery(
+				detailQueryOptions(
+					bridge,
+					productId,
+					selectedOptions ? { selectedOptions } : undefined,
+				),
+			);
 		},
 		[bridge, queryClient],
 	);
@@ -76,7 +78,7 @@ export function DetailView({
 		resolve: resolveVariant,
 	});
 
-	const stats = priceHistoryQuery.data?.statistics;
+	const stats = priceHistory?.statistics;
 	React.useEffect(() => {
 		onFocusChange?.({
 			product,
@@ -172,7 +174,7 @@ export function DetailView({
 						void bridge.openLink(offer.url);
 					}}
 					buyLinkRel="sponsored noopener noreferrer"
-					priceHistory={priceHistoryQuery.data}
+					priceHistory={priceHistory}
 					isResolving={isResolving || hydrating}
 					locale={locale}
 					fetchSimilar={fetchSimilar}
@@ -188,19 +190,7 @@ export function DetailView({
 								<ProductDetailsOffers />
 								<ProductDetailsDescription />
 								<ProductDetailsAttributes />
-								{showPriceHistory ? (
-									<>
-										<Separator />
-										<ProductDetailsPriceHistory>
-											{priceHistory.length > 0 ? (
-												<PriceChart
-													history={priceHistory}
-													locale={locale}
-												/>
-											) : null}
-										</ProductDetailsPriceHistory>
-									</>
-								) : null}
+								<ProductDetailsPriceHistory />
 							</div>
 						</div>
 						<ProductDetailsRecommendations locale={locale} className="pb-4" />

@@ -1,4 +1,4 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
+import type { Product } from "@channel3/sdk/resources";
 import { Bookmark } from "lucide-react";
 import type { MouseEvent } from "react";
 
@@ -88,7 +88,7 @@ export function ProductSaveToggle({
 	saved,
 	className,
 }: {
-	product: ProductDetail;
+	product: Product;
 	saved: SavedProducts;
 	className?: string;
 }) {
@@ -107,7 +107,7 @@ export function ProductSaveRow({
 	saved,
 	className,
 }: {
-	product: ProductDetail;
+	product: Product;
 	saved: SavedProducts;
 	className?: string;
 }) {

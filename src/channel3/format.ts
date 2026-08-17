@@ -1,12 +1,11 @@
 import { formatCurrency, leadOffer } from "../../shared/format";
-import type { ProductDetail, ProductOffer } from "./client";
+import type { Product, ProductOffer } from "@channel3/sdk/resources";
 
 const CDN_IMAGE_PREFIX = "https://cdn.trychannel3.com/";
 
 type ProductImage = {
 	url: string;
 	cleaned_url?: string | null;
-	is_cleaned_image?: boolean;
 	is_main_image?: boolean;
 };
 
@@ -22,13 +21,13 @@ function withCleanedDisplayUrl(image: ProductImage): ProductImage {
 	return image.cleaned_url ? { ...image, url: image.cleaned_url } : image;
 }
 
-function summaryImages(product: ProductDetail): ProductImage[] {
+function summaryImages(product: Product): ProductImage[] {
 	const images = cdnImages(product.images as ProductImage[] | undefined);
 	if (!images?.length) {
 		return [];
 	}
 	const primarySource =
-		images.find((image) => image.cleaned_url || image.is_cleaned_image) ??
+		images.find((image) => image.cleaned_url != null) ??
 		images.find((image) => image.is_main_image) ??
 		images[0];
 	const primary = withCleanedDisplayUrl(primarySource);
@@ -50,7 +49,7 @@ export function formatOffers(offers: ProductOffer[] | undefined) {
 	return (offers ?? []).map(formatOffer);
 }
 
-export function formatProductSummary(product: ProductDetail) {
+export function formatProductSummary(product: Product) {
 	return {
 		id: product.id,
 		title: product.title,
@@ -60,11 +59,11 @@ export function formatProductSummary(product: ProductDetail) {
 	};
 }
 
-export function toPublicProduct(product: ProductDetail): ProductDetail {
+export function toPublicProduct(product: Product): Product {
 	return { ...product, images: cdnImages(product.images), offers: formatOffers(product.offers) };
 }
 
-export function formatProductDetail(product: ProductDetail): ProductDetail {
+export function formatProductDetail(product: Product): Product {
 	const stripped = toPublicProduct(product);
 	return {
 		...stripped,

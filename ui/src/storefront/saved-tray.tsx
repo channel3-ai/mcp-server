@@ -1,4 +1,4 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
+import type { Product } from "@channel3/sdk/resources";
 import { ArrowLeftRight, PanelRightClose, X } from "lucide-react";
 import * as React from "react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ const SavedRow = React.memo(function SavedRow({
 }: {
 	item: SavedItem;
 	highlighted: boolean;
-	onSelect: (product: ProductDetail) => void;
+	onSelect: (product: Product) => void;
 	onRemove: (id: string) => void;
 }) {
 	const offer = item.product ? leadOffer(item.product.offers) : null;
@@ -91,7 +91,7 @@ export function SavedTray({
 }: {
 	saved: SavedProducts;
 	open: boolean;
-	onSelect: (product: ProductDetail) => void;
+	onSelect: (product: Product) => void;
 	onCompare: () => void;
 	onClose: () => void;
 }) {

@@ -1,8 +1,9 @@
-import { APIError } from "@channel3/sdk";
+import { Channel3Error } from "@channel3/sdk";
+import type { Product } from "@channel3/sdk/resources";
 import type { z } from "zod";
 
 import type { GetProductsRequestSchema, SearchRequestSchema } from "../schemas";
-import { type Channel3Client, createClient, type ProductDetail } from "./client";
+import { type Channel3Client, createClient } from "./client";
 import { formatProductDetail, formatProductSummary, type ProductSummary } from "./format";
 import { resolveProductDetail } from "./resolve";
 
@@ -15,8 +16,8 @@ export interface SearchPageInput {
 
 export function isExhaustedPageTokenError(err: unknown): boolean {
 	return (
-		err instanceof APIError &&
-		(err.status === 410 || (err.status === 400 && err.message.includes("page_token")))
+		err instanceof Channel3Error &&
+		(err.statusCode === 410 || (err.statusCode === 400 && err.message.includes("page_token")))
 	);
 }
 
@@ -53,8 +54,8 @@ export async function searchProducts(
 		limit: 8,
 	});
 	return {
-		products: page.products.map(formatProductSummary),
-		next_page_token: page.next_page_token,
+		products: page.data.map(formatProductSummary),
+		next_page_token: page.response.next_page_token ?? null,
 	};
 }
 
@@ -62,15 +63,14 @@ export async function getProducts(
 	apiKey: string,
 	params: z.infer<typeof GetProductsRequestSchema>,
 	baseURL?: string,
-): Promise<{ products: ProductDetail[]; unresolved?: string[] }> {
+): Promise<{ products: Product[]; unresolved?: string[] }> {
 	const client = createClient(apiKey, baseURL);
 	const results = await Promise.allSettled(
 		params.product_ids.map((id) => resolveProductDetail(client, id)),
 	);
 	const products = results
 		.filter(
-			(result): result is PromiseFulfilledResult<ProductDetail> =>
-				result.status === "fulfilled",
+			(result): result is PromiseFulfilledResult<Product> => result.status === "fulfilled",
 		)
 		.map((result) => formatProductDetail(result.value));
 	if (products.length === 0) {

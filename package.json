@@ -34,7 +34,7 @@
 		"wrangler": "^4.106.0"
 	},
 	"dependencies": {
-		"@channel3/sdk": "^3.5.1",
+		"@channel3/sdk": "^4.0.0",
 		"@modelcontextprotocol/ext-apps": "^1.7.5",
 		"@modelcontextprotocol/server": "^2.0.0",
 		"@posthog/mcp": "^0.10.7",
@@ -52,6 +52,7 @@
 		"react": "^19.2.8",
 		"react-colorful": "^5.8.0",
 		"react-dom": "^19.2.8",
+		"recharts": "2.15.4",
 		"tailwind-merge": "^3.6.0",
 		"zod": "^4.4.3"
 	},

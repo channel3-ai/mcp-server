@@ -1,112 +1,97 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
-import type * as React from "react";
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import * as React from "react";
+import type { OptionValue, Product } from "@channel3/sdk/resources";
+
 import { cn } from "@/lib/utils";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { ProductCard, ProductCardSkeleton } from "@/registry/default/components/product-card";
 
-type OptionValue = ProductDetail.Variants.Option.Value;
-
 export interface ProductGridProps extends Omit<React.ComponentProps<"div">, "onSelect"> {
-	/** Products to render, typically a page of search results. */
-	products: ReadonlyArray<ProductDetail>;
-	/** Per-product destination URL; makes each card a crawlable `<a href>`. */
-	getHref?: (product: ProductDetail) => string;
-	/** Forwarded to each {@link ProductCard}. */
-	onSelect?: (product: ProductDetail) => void;
-	/** Forwarded to each {@link ProductCard}; prefetch hook on hover/focus/touch. */
-	onPreload?: (product: ProductDetail) => void;
-	/** Forwarded to each {@link ProductCard} for color-swatch navigation. */
-	onSelectVariant?: (product: ProductDetail, value: OptionValue) => void;
-	/** Forwarded to each {@link ProductCard}; show color swatches below the price. */
-	showSwatches?: boolean;
-	cardAction?: (product: ProductDetail) => React.ReactNode;
-	/** Show skeleton placeholders instead of products. */
-	loading?: boolean;
-	/** Number of skeletons to render while loading. */
-	skeletonCount?: number;
-	/** Custom node rendered when there are no products and not loading. */
-	emptyState?: React.ReactNode;
-	/** Locale override for price formatting. */
-	locale?: string;
+  products: ReadonlyArray<Product>;
+  getHref?: (product: Product) => string;
+  onSelect?: (product: Product) => void;
+  onPreload?: (product: Product) => void;
+  onSelectVariant?: (product: Product, value: OptionValue) => void;
+  showSwatches?: boolean;
+  loading?: boolean;
+  skeletonCount?: number;
+  emptyState?: React.ReactNode;
+  locale?: string;
+  /** Optional action rendered over each card (e.g. a save toggle). */
+  cardAction?: (product: Product) => React.ReactNode;
 }
 
-/** First row of cards (widest layout) loaded eagerly as likely-LCP imagery. */
 const PRIORITY_COUNT = 4;
 
-/** Responsive grid of {@link ProductCard}s with loading and empty states. */
 export function ProductGrid({
-	products,
-	getHref,
-	onSelect,
-	onPreload,
-	onSelectVariant,
-	cardAction,
-	showSwatches = true,
-	loading = false,
-	skeletonCount = 8,
-	emptyState,
-	locale,
-	className,
-	...props
+  products,
+  getHref,
+  onSelect,
+  onPreload,
+  onSelectVariant,
+  showSwatches = true,
+  loading = false,
+  skeletonCount = 8,
+  emptyState,
+  locale,
+  cardAction,
+  className,
+  ...props
 }: ProductGridProps) {
-	const gridClass = cn(
-		"grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4",
-		className,
-	);
+  const gridClass = cn(
+    "grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4",
+    className,
+  );
 
-	if (loading) {
-		return (
-			<div data-slot="product-grid" className={gridClass} {...props}>
-				{Array.from({ length: skeletonCount }, (_, index) => (
-					<ProductCardSkeleton key={index} />
-				))}
-			</div>
-		);
-	}
+  if (loading) {
+    return (
+      <div data-slot="product-grid" className={gridClass} {...props}>
+        {Array.from({ length: skeletonCount }, (_, index) => (
+          <ProductCardSkeleton key={index} />
+        ))}
+      </div>
+    );
+  }
 
-	if (products.length === 0) {
-		return (
-			<div data-slot="product-grid" {...props}>
-				{emptyState ?? (
-					<Empty>
-						<EmptyHeader>
-							<EmptyTitle>No products found</EmptyTitle>
-							<EmptyDescription>
-								Try a different search or adjust your filters.
-							</EmptyDescription>
-						</EmptyHeader>
-					</Empty>
-				)}
-			</div>
-		);
-	}
+  if (products.length === 0) {
+    return (
+      <div data-slot="product-grid" {...props}>
+        {emptyState ?? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyTitle>No products found</EmptyTitle>
+              <EmptyDescription>Try a different search or adjust your filters.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        )}
+      </div>
+    );
+  }
 
-	return (
-		<div data-slot="product-grid" className={gridClass} {...props}>
-			{products.map((product, index) => {
-				const card = (
-					<ProductCard
-						key={product.id}
-						product={product}
-						href={getHref?.(product)}
-						onSelect={onSelect}
-						onPreload={onPreload}
-						onSelectVariant={onSelectVariant}
-						showSwatches={showSwatches}
-						priority={index < PRIORITY_COUNT}
-						locale={locale}
-					/>
-				);
-				if (!cardAction) {
-					return card;
-				}
-				return (
-					<div key={product.id} className="relative h-full">
-						{card}
-						{cardAction(product)}
-					</div>
-				);
-			})}
-		</div>
-	);
+  return (
+    <div data-slot="product-grid" className={gridClass} {...props}>
+      {products.map((product, index) => {
+        const card = (
+          <ProductCard
+            product={product}
+            href={getHref?.(product)}
+            onSelect={onSelect}
+            onPreload={onPreload}
+            onSelectVariant={onSelectVariant ? (value) => onSelectVariant(product, value) : undefined}
+            showSwatches={showSwatches}
+            priority={index < PRIORITY_COUNT}
+            locale={locale}
+          />
+        );
+        if (!cardAction) {
+          return <React.Fragment key={product.id}>{card}</React.Fragment>;
+        }
+        return (
+          <div key={product.id} className="relative h-full">
+            {card}
+            {cardAction(product)}
+          </div>
+        );
+      })}
+    </div>
+  );
 }

@@ -1,4 +1,5 @@
-import type { Channel3Client, ProductDetail } from "./client";
+import type { Product } from "@channel3/sdk/resources";
+import type { Channel3Client } from "./client";
 
 const URL_PATTERN = /^https?:\/\//i;
 
@@ -37,14 +38,14 @@ export function extractChannel3ProductId(input: string): string | null {
 export async function resolveProductDetail(
 	client: Channel3Client,
 	input: string,
-): Promise<ProductDetail> {
+): Promise<Product> {
 	if (isUrl(input)) {
 		const channelId = extractChannel3ProductId(input);
 		if (channelId) {
-			return client.products.retrieve(channelId);
+			return client.products.retrieve({ product_id: channelId });
 		}
 		const response = await client.products.lookup({ url: input.trim() });
 		return response.product;
 	}
-	return client.products.retrieve(input);
+	return client.products.retrieve({ product_id: input });
 }

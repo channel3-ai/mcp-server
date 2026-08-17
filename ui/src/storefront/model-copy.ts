@@ -1,4 +1,4 @@
-import type { ProductDetail } from "@channel3/sdk/resources";
+import type { Product } from "@channel3/sdk/resources";
 import { formatCurrency, leadOffer } from "@shared/format";
 
 import type { PresenceRecord, ResultSetPresence } from "@/storefront/instance-presence";
@@ -10,7 +10,7 @@ import type {
 } from "@/storefront/types";
 import { compareOrderKeys } from "@/storefront/types";
 
-type SyncSource = Pick<ProductDetail, "id" | "title" | "brands" | "offers">;
+type SyncSource = Pick<Product, "id" | "title" | "brands" | "offers">;
 
 export function toSyncedProduct(product: SyncSource): SyncedProduct {
 	const best = leadOffer(product.offers);
@@ -51,7 +51,7 @@ function attributeLabel(handle: string): string {
 	return handle.replace(/[_-]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function offerSummary(product: ProductDetail): OfferFocusSummary | undefined {
+function offerSummary(product: Product): OfferFocusSummary | undefined {
 	const offers = product.offers ?? [];
 	if (offers.length === 0) {
 		return undefined;
@@ -70,7 +70,7 @@ function offerSummary(product: ProductDetail): OfferFocusSummary | undefined {
  * features, attributes, the offer spread) so it can answer without a round-trip.
  */
 export function toFocusContext(
-	product: ProductDetail,
+	product: Product,
 	options: { inTranscript: boolean; variantTitle?: string; priceStats?: PriceFocusStats },
 ): Extract<ViewingContext, { kind: "product" }> {
 	const description = product.description?.trim();

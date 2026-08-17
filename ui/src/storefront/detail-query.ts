@@ -1,9 +1,13 @@
-import type { StorefrontBridge } from "@/storefront/bridge";
+import type { GetProductOptions, StorefrontBridge } from "@/storefront/bridge";
 
-export function detailQueryOptions(bridge: StorefrontBridge, id: string) {
+export function detailQueryOptions(
+	bridge: StorefrontBridge,
+	id: string,
+	options?: GetProductOptions,
+) {
 	return {
-		queryKey: ["details", id] as const,
-		queryFn: () => bridge.getProduct(id),
+		queryKey: ["details", id, options?.selectedOptions ?? null] as const,
+		queryFn: () => bridge.getProduct(id, options),
 		staleTime: 5 * 60_000,
 	};
 }
