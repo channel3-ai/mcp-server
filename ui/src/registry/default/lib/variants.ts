@@ -21,33 +21,33 @@ export type ValueState = "selected" | "available" | "outOfStock" | "notOffered";
  * `outOfStock` value re-resolves the configuration server-side.
  */
 export function valueState(value: OptionValue, isSelected: boolean): ValueState {
-  if (isSelected) {
-    return "selected";
-  }
-  if (!value.exists) {
-    return "notOffered";
-  }
-  if (value.available && !isInStock(value.available)) {
-    return "outOfStock";
-  }
-  return "available";
+	if (isSelected) {
+		return "selected";
+	}
+	if (!value.exists) {
+		return "notOffered";
+	}
+	if (value.available && !isInStock(value.available)) {
+		return "outOfStock";
+	}
+	return "available";
 }
 
 export function selectionFromVariants(variants: Variants): Record<string, string> {
-  return Object.fromEntries(variants.selected.map((selected) => [selected.name, selected.label]));
+	return Object.fromEntries(variants.selected.map((selected) => [selected.name, selected.label]));
 }
 
 export function isSwatchOption(option: VariantOption): boolean {
-  return option.values.some((value) => Boolean(value.thumbnail_url));
+	return option.values.some((value) => Boolean(value.thumbnail_url));
 }
 
 export function swatchOption(variants: Variants): VariantOption | undefined {
-  return variants.options.find(isSwatchOption);
+	return variants.options.find(isSwatchOption);
 }
 
 export function mergeSelection(
-  variants: Variants,
-  pending: Record<string, string>,
+	variants: Variants,
+	pending: Record<string, string>,
 ): Record<string, string> {
-  return { ...selectionFromVariants(variants), ...pending };
+	return { ...selectionFromVariants(variants), ...pending };
 }

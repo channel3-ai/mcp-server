@@ -123,7 +123,7 @@ export class AppBridge implements StorefrontBridge {
 		);
 		return {
 			...parsed,
-			history: parsed.history.map((point) => ({
+			history: (parsed.history ?? []).map((point) => ({
 				...point,
 				timestamp: new Date(point.timestamp as unknown as string),
 			})),
