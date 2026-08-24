@@ -38,6 +38,32 @@ async function sha256Hex(input: string): Promise<string> {
 	return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+function asId(value: unknown): string | undefined {
+	return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function deviceDistinctId(deviceId: string): string {
+	return `device_${deviceId}`;
+}
+
+function threadDistinctId(threadId: string): string {
+	return `thread_${threadId}`;
+}
+
+function identityFrom(
+	properties: Record<string, unknown>,
+	parameters?: unknown,
+): { deviceId?: string; threadId?: string } {
+	const params =
+		parameters && typeof parameters === "object"
+			? (parameters as Record<string, unknown>)
+			: undefined;
+	return {
+		deviceId: asId(properties.device_id) ?? asId(params?.device_id),
+		threadId: asId(properties.thread_id) ?? asId(params?.thread_id),
+	};
+}
+
 let sharedClient: { key: string; host?: string; client: PostHogMCP } | null = null;
 
 function getSharedClient(env: Bindings): PostHogMCP | null {
@@ -102,14 +128,37 @@ export class Analytics {
 		};
 	}
 
+	private freeDistinctId(deviceId?: string, threadId?: string): string | undefined {
+		if (deviceId) return deviceDistinctId(deviceId);
+		if (threadId) return threadDistinctId(threadId);
+		return undefined;
+	}
+
+	private aliasThreadToDevice(deviceId: string, threadId: string): void {
+		this.client?.alias({
+			distinctId: deviceDistinctId(deviceId),
+			alias: threadDistinctId(threadId),
+		});
+	}
+
 	async captureToolCall(data: ToolCallCaptureData): Promise<void> {
 		try {
 			if (!this.client) return;
 			const { properties, ...common } = await this.common();
+			const merged = { ...data.properties, ...properties };
+			const { deviceId, threadId } = identityFrom(merged, data.parameters);
+			if (!common.distinctId && deviceId && threadId) {
+				this.aliasThreadToDevice(deviceId, threadId);
+			}
 			this.client.captureToolCall({
 				...data,
 				...common,
-				properties: { ...data.properties, ...properties },
+				distinctId: common.distinctId ?? this.freeDistinctId(deviceId, threadId),
+				properties: {
+					...merged,
+					...(threadId ? { thread_id: threadId } : {}),
+					...(deviceId ? { device_id: deviceId } : {}),
+				},
 			});
 		} catch (err) {
 			console.warn("analytics capture failed", err);
@@ -129,11 +178,13 @@ export class Analytics {
 				protocolVersion,
 				distinctId,
 			} = await this.common();
-			const deviceId =
-				typeof properties.device_id === "string" ? properties.device_id : undefined;
+			const { deviceId, threadId } = identityFrom(properties);
+			if (!distinctId && deviceId && threadId) {
+				this.aliasThreadToDevice(deviceId, threadId);
+			}
 			const at = timestamp ? new Date(timestamp) : undefined;
 			this.client.capture({
-				distinctId: distinctId ?? (deviceId ? `device_${deviceId}` : undefined),
+				distinctId: distinctId ?? this.freeDistinctId(deviceId, threadId),
 				event,
 				properties: {
 					...properties,

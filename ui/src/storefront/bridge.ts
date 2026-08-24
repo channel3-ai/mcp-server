@@ -10,7 +10,7 @@ import {
 } from "@shared/wire";
 import type { z } from "zod";
 
-import { getThreadId } from "@/storefront/identity";
+import { getDeviceId, getThreadId } from "@/storefront/identity";
 
 export interface BrowseInput {
 	query?: string;
@@ -57,9 +57,12 @@ function structuredContent<T>(result: ToolResult, tool: string, schema: z.ZodTyp
 	return parsed.data as T;
 }
 
-function threadArg(): { thread_id?: string } {
+function identityArgs(): { thread_id?: string; device_id: string } {
 	const threadId = getThreadId();
-	return threadId ? { thread_id: threadId } : {};
+	return {
+		...(threadId ? { thread_id: threadId } : {}),
+		device_id: getDeviceId(),
+	};
 }
 
 export class AppBridge implements StorefrontBridge {
@@ -75,7 +78,7 @@ export class AppBridge implements StorefrontBridge {
 				query: input.query || undefined,
 				image_url: input.imageUrl,
 				page_token: input.pageToken,
-				...threadArg(),
+				...identityArgs(),
 			},
 		});
 		const page = structuredContent<ProductsPageResult>(
@@ -89,7 +92,7 @@ export class AppBridge implements StorefrontBridge {
 	async getSimilar(productId: string, limit: number): Promise<Product[]> {
 		const result = await this.app.callServerTool({
 			name: "get_similar",
-			arguments: { product_id: productId, limit, ...threadArg() },
+			arguments: { product_id: productId, limit, ...identityArgs() },
 		});
 		return structuredContent<ProductsPageResult>(
 			result,
@@ -104,7 +107,7 @@ export class AppBridge implements StorefrontBridge {
 			arguments: {
 				product_id: productId,
 				...(options?.selectedOptions ? { selected_options: options.selectedOptions } : {}),
-				...threadArg(),
+				...identityArgs(),
 			},
 		});
 		return structuredContent<GetDetailsResult>(result, "get_details", GetDetailsResultSchema)
@@ -114,19 +117,20 @@ export class AppBridge implements StorefrontBridge {
 	async getPriceHistory(productId: string): Promise<GetPriceHistoryResult> {
 		const result = await this.app.callServerTool({
 			name: "get_price_history",
-			arguments: { product_id: productId, ...threadArg() },
+			arguments: { product_id: productId, ...identityArgs() },
 		});
-		const parsed = structuredContent<GetPriceHistoryResult>(
+		const parsed = structuredContent<z.infer<typeof GetPriceHistoryResultSchema>>(
 			result,
 			"get_price_history",
 			GetPriceHistoryResultSchema,
 		);
 		return {
-			...parsed,
-			history: (parsed.history ?? []).map((point) => ({
+			canonical_product_id: parsed.canonical_product_id,
+			history: parsed.history.map((point) => ({
 				...point,
-				timestamp: new Date(point.timestamp as unknown as string),
+				timestamp: new Date(point.timestamp),
 			})),
+			statistics: parsed.statistics,
 		};
 	}
 
