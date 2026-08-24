@@ -1,9 +1,9 @@
+import { serialization } from "@channel3/sdk";
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/server";
 import {
 	type GetDetailsResult,
 	GetDetailsResultSchema,
-	type GetPriceHistoryResult,
 	GetPriceHistoryResultSchema,
 	type ProductsPageResult,
 	ProductsPageResultSchema,
@@ -31,8 +31,11 @@ function toProductsPage(page: Awaited<ReturnType<typeof searchProductsPage>>): P
 	};
 }
 
-function threadProperty(p: { thread_id?: string }): Record<string, unknown> {
-	return p.thread_id ? { thread_id: p.thread_id } : {};
+function trackIdentity(p: { thread_id?: string; device_id?: string }): Record<string, unknown> {
+	return {
+		...(p.thread_id ? { thread_id: p.thread_id } : {}),
+		...(p.device_id ? { device_id: p.device_id } : {}),
+	};
 }
 
 export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
@@ -68,7 +71,7 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 					}
 				},
 				{
-					trackProperties: threadProperty(params),
+					trackProperties: trackIdentity(params),
 					summarize: (r) => `${r.products.length} products`,
 				},
 			),
@@ -92,7 +95,7 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 				params,
 				async (p) => toProductsPage(await findSimilarProductsPage(client, p)),
 				{
-					trackProperties: threadProperty(params),
+					trackProperties: trackIdentity(params),
 					summarize: (r) => `${r.products.length} similar products`,
 				},
 			),
@@ -123,7 +126,7 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 					),
 				}),
 				{
-					trackProperties: threadProperty(params),
+					trackProperties: trackIdentity(params),
 					summarize: (r) => r.product.title,
 				},
 			),
@@ -145,7 +148,7 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 				"get_price_history",
 				ctx,
 				params,
-				async (p): Promise<GetPriceHistoryResult> => {
+				async (p) => {
 					const history = await client.priceTracking
 						.retrieveHistory({ canonical_product_id: p.product_id, days: 30 })
 						.catch((err: unknown) => {
@@ -154,14 +157,24 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 							);
 							return null;
 						});
+					if (!history) {
+						return {
+							canonical_product_id: p.product_id,
+							history: [],
+							statistics: null,
+						};
+					}
+					const raw = serialization.PriceHistoryResponse.jsonOrThrow(history, {
+						unrecognizedObjectKeys: "strip",
+					});
 					return {
-						canonical_product_id: p.product_id,
-						history: history?.history ?? [],
-						statistics: history?.statistics ?? null,
+						canonical_product_id: raw.canonical_product_id,
+						history: raw.history ?? [],
+						statistics: raw.statistics ?? null,
 					};
 				},
 				{
-					trackProperties: threadProperty(params),
+					trackProperties: trackIdentity(params),
 					summarize: (r) => `${r.history?.length ?? 0} price points`,
 				},
 			),

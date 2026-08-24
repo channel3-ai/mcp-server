@@ -50,6 +50,7 @@ export const BrowseProductsSchema = z
 			.describe("Token from a previous response's next_page_token."),
 		limit: z.number().int().min(1).max(30).default(20),
 		thread_id: threadIdPassthrough,
+		device_id: z.string().optional(),
 	})
 	.refine((data) => Boolean(data.query || data.image_url || data.page_token), {
 		message: "At least one of `query`, `image_url`, or `page_token` is required.",
@@ -59,6 +60,7 @@ export const GetSimilarSchema = z.object({
 	product_id: z.string().describe("Canonical product ID to find similar products for."),
 	limit: z.number().int().min(1).max(30).default(20),
 	thread_id: threadIdPassthrough,
+	device_id: z.string().optional(),
 });
 
 export const ProductIdRequestSchema = z.object({
@@ -68,4 +70,5 @@ export const ProductIdRequestSchema = z.object({
 		.optional()
 		.describe("Variant configuration as `{ optionName: label }` for re-resolving offers."),
 	thread_id: threadIdPassthrough,
+	device_id: z.string().optional(),
 });
