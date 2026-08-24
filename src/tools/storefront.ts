@@ -39,8 +39,6 @@ function trackIdentity(p: { thread_id?: string; device_id?: string }): Record<st
 }
 
 export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
-	const client = createClient(ctx.props.apiKey, ctx.props.baseURL);
-
 	registerAppTool(
 		asExtAppsServer(server),
 		"browse_products",
@@ -58,6 +56,7 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 				ctx,
 				params,
 				async (p) => {
+					const client = createClient(ctx.props.apiKey, ctx.props.baseURL, p.thread_id);
 					try {
 						return toProductsPage(await searchProductsPage(client, p));
 					} catch (err) {
@@ -93,7 +92,13 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 				"get_similar",
 				ctx,
 				params,
-				async (p) => toProductsPage(await findSimilarProductsPage(client, p)),
+				async (p) =>
+					toProductsPage(
+						await findSimilarProductsPage(
+							createClient(ctx.props.apiKey, ctx.props.baseURL, p.thread_id),
+							p,
+						),
+					),
 				{
 					trackProperties: trackIdentity(params),
 					summarize: (r) => `${r.products.length} similar products`,
@@ -119,7 +124,11 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 				params,
 				async (p): Promise<GetDetailsResult> => ({
 					product: toPublicProduct(
-						await client.products.retrieve({
+						await createClient(
+							ctx.props.apiKey,
+							ctx.props.baseURL,
+							p.thread_id,
+						).products.retrieve({
 							product_id: p.product_id,
 							...(p.selected_options ? { selected_options: p.selected_options } : {}),
 						}),
@@ -149,8 +158,11 @@ export function registerStorefrontTools(server: McpServer, ctx: ToolContext) {
 				ctx,
 				params,
 				async (p) => {
-					const history = await client.priceTracking
-						.retrieveHistory({ canonical_product_id: p.product_id, days: 30 })
+					const history = await createClient(ctx.props.apiKey, ctx.props.baseURL)
+						.priceTracking.retrieveHistory({
+							canonical_product_id: p.product_id,
+							days: 30,
+						})
 						.catch((err: unknown) => {
 							console.warn(
 								`price history unavailable for ${p.product_id}: ${err instanceof Error ? err.message : String(err)}`,
