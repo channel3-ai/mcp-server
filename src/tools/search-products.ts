@@ -37,7 +37,7 @@ export function registerSearchProducts(server: McpServer, ctx: ToolContext) {
 				async (p) => ({
 					query: p.query,
 					image_url: p.image_url,
-					...(await searchProducts(ctx.props.apiKey, p, ctx.props.baseURL)),
+					...(await searchProducts(ctx.props.apiKey, p, ctx.props.baseURL, threadId)),
 					as_of: new Date().toISOString(),
 					session_id: ctx.analytics.sessionId,
 					server_origin: ctx.origin,

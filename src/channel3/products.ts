@@ -46,9 +46,10 @@ export function findSimilarProductsPage(
 export async function searchProducts(
 	apiKey: string,
 	params: z.infer<typeof SearchRequestSchema>,
-	baseURL?: string,
+	baseURL: string | undefined,
+	threadId: string,
 ): Promise<{ products: ProductSummary[]; next_page_token: string | null }> {
-	const page = await searchProductsPage(createClient(apiKey, baseURL), {
+	const page = await searchProductsPage(createClient(apiKey, baseURL, threadId), {
 		query: params.query,
 		image_url: params.image_url,
 		limit: 8,
@@ -62,9 +63,10 @@ export async function searchProducts(
 export async function getProducts(
 	apiKey: string,
 	params: z.infer<typeof GetProductsRequestSchema>,
-	baseURL?: string,
+	baseURL: string | undefined,
+	threadId: string,
 ): Promise<{ products: Product[]; unresolved?: string[] }> {
-	const client = createClient(apiKey, baseURL);
+	const client = createClient(apiKey, baseURL, threadId);
 	const results = await Promise.allSettled(
 		params.product_ids.map((id) => resolveProductDetail(client, id)),
 	);

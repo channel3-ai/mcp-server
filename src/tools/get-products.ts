@@ -32,7 +32,7 @@ export function registerGetProducts(server: McpServer, ctx: ToolContext) {
 				ctx,
 				params,
 				async (p) => ({
-					...(await getProducts(ctx.props.apiKey, p, ctx.props.baseURL)),
+					...(await getProducts(ctx.props.apiKey, p, ctx.props.baseURL, threadId)),
 					as_of: new Date().toISOString(),
 					session_id: ctx.analytics.sessionId,
 					server_origin: ctx.origin,
