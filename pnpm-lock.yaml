@@ -9,7 +9,7 @@ overrides:
   undici: '>=7.24.0'
   picomatch: '>=4.0.4'
   fast-xml-parser: '>=4.5.7'
-  tar: '>=7.5.11'
+  tar: '>=7.5.22'
   tar-fs: '>=2.1.4'
   flatted: '>=3.4.2'
   rollup: '>=4.59.0'
