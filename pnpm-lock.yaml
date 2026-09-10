@@ -96,8 +96,8 @@ importers:
         specifier: ^4.20260701.1
         version: 4.20260702.1
       '@modelcontextprotocol/inspector':
-        specifier: ^2.0.0
-        version: 2.5.0(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(@rolldown/plugin-babel@0.2.4(@babel/core@8.0.1)(@babel/runtime@7.29.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0)))(@types/node@26.5.0)(@types/react@19.2.18)(esbuild@0.28.2)(express@5.2.1)(jiti@2.7.0)(react-dom@19.2.8(react@19.2.8))
+        specifier: ^2.6.0
+        version: 2.6.0(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(@rolldown/plugin-babel@0.2.4(@babel/core@8.0.1)(@babel/runtime@7.29.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0)))(@types/node@26.5.0)(@types/react@19.2.18)(esbuild@0.28.2)(express@5.2.1)(jiti@2.7.0)(react-dom@19.2.8(react@19.2.8))
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.2.2(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
@@ -902,8 +902,8 @@ packages:
       react-dom:
         optional: true
 
-  '@modelcontextprotocol/inspector@2.5.0':
-    resolution: {integrity: sha512-E7YQiWyuXLVPPbDRO5HpyCXcYnwG8EPHNbqNPn5u+AxDzfNi+6Idw2vRYW9CQplJpkxGkNtquTFXGZ0ZncksIg==}
+  '@modelcontextprotocol/inspector@2.6.0':
+    resolution: {integrity: sha512-e/kC3Xx+iqsYg17nxZtp9H6ZfpK8gVlGklsT/4LcpbSgMVaAQZCa5jihRvcrmnksNl+h5dcwm7WgH/ao2gI1ew==}
     engines: {node: '>=22.19.0'}
     hasBin: true
 
@@ -4033,7 +4033,7 @@ snapshots:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
 
-  '@modelcontextprotocol/inspector@2.5.0(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(@rolldown/plugin-babel@0.2.4(@babel/core@8.0.1)(@babel/runtime@7.29.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0)))(@types/node@26.5.0)(@types/react@19.2.18)(esbuild@0.28.2)(express@5.2.1)(jiti@2.7.0)(react-dom@19.2.8(react@19.2.8))':
+  '@modelcontextprotocol/inspector@2.6.0(@modelcontextprotocol/sdk@1.30.0(@cfworker/json-schema@4.1.1)(zod@4.5.4))(@rolldown/plugin-babel@0.2.4(@babel/core@8.0.1)(@babel/runtime@7.29.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0)))(@types/node@26.5.0)(@types/react@19.2.18)(esbuild@0.28.2)(express@5.2.1)(jiti@2.7.0)(react-dom@19.2.8(react@19.2.8))':
     dependencies:
       '@hono/node-server': 2.1.1(hono@4.13.7)
       '@modelcontextprotocol/client': 2.0.0
