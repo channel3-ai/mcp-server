@@ -7,7 +7,7 @@ settings:
 overrides:
   '@hono/node-server': '>=1.19.17'
   undici: '>=7.29.1'
-  picomatch: '>=4.0.4'
+  picomatch: '>=4.0.7'
   fast-xml-parser: '>=5.11.1'
   tar: '>=7.5.22'
   tar-fs: '>=2.1.4'
@@ -2440,7 +2440,7 @@ packages:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
-      picomatch: '>=4.0.4'
+      picomatch: '>=4.0.7'
     peerDependenciesMeta:
       picomatch:
         optional: true
