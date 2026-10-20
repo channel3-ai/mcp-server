@@ -93,7 +93,7 @@ importers:
         specifier: ^2.5.2
         version: 2.5.12
       '@cloudflare/workers-types':
-        specifier: ^4.20260701.1
+        specifier: ^4.20260702.1
         version: 4.20260702.1
       '@modelcontextprotocol/inspector':
         specifier: ^2.0.0
