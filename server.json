@@ -7,13 +7,15 @@
 	"websiteUrl": "https://trychannel3.com",
 	"icons": [
 		{
-			"src": "https://mcp.trychannel3.com/icons/channel3-logo-small-light.svg",
+			"src": "https://mcp.trychannel3.com/icons/channel3-logo-light.svg",
 			"mimeType": "image/svg+xml",
+			"sizes": ["any"],
 			"theme": "light"
 		},
 		{
-			"src": "https://mcp.trychannel3.com/icons/channel3-logo-small-dark.svg",
+			"src": "https://mcp.trychannel3.com/icons/channel3-logo-dark.svg",
 			"mimeType": "image/svg+xml",
+			"sizes": ["any"],
 			"theme": "dark"
 		}
 	],

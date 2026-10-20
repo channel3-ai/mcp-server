@@ -44,13 +44,15 @@ export async function createServer(env: Bindings, request: Request, analytics: A
 			websiteUrl: "https://trychannel3.com",
 			icons: [
 				{
-					src: `${origin}/icons/channel3-logo-small-light.svg`,
+					src: `${origin}/icons/channel3-logo-light.svg`,
 					mimeType: "image/svg+xml",
+					sizes: ["any"],
 					theme: "light",
 				},
 				{
-					src: `${origin}/icons/channel3-logo-small-dark.svg`,
+					src: `${origin}/icons/channel3-logo-dark.svg`,
 					mimeType: "image/svg+xml",
+					sizes: ["any"],
 					theme: "dark",
 				},
 			],
