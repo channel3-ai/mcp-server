@@ -25,7 +25,7 @@ export function registerSearchProducts(server: McpServer, ctx: ToolContext) {
 				THREAD_ID_TOOL_DESCRIPTION,
 			inputSchema: SearchRequestSchema,
 			outputSchema: SearchProductsResultSchema,
-			annotations: READ_ONLY_ANNOTATIONS,
+			annotations: { ...READ_ONLY_ANNOTATIONS, openWorldHint: true },
 			_meta: { ui: { resourceUri: STOREFRONT_RESOURCE_URI } },
 		},
 		async (params) => {
