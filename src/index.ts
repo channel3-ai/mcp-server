@@ -13,6 +13,8 @@ import { z } from "zod";
 import { Analytics } from "./analytics/posthog";
 import { createServer, propsFromRequest } from "./mcp-server";
 import type { Bindings } from "./types";
+import { getWakeshift } from "./wakeshift";
+import { handleChannel3Webhook } from "./webhooks/channel3";
 
 const app = new Hono<{
 	Bindings: Bindings;
@@ -24,6 +26,15 @@ app.use("/", async (c, next) => {
 		return c.redirect("https://trychannel3.com/mcp", 302);
 	}
 	await next();
+});
+
+// Channel3 product-subscription webhooks, relayed to watching conversations via Wakeshift.
+// Registered before the analytics middleware: these aren't MCP traffic.
+app.post("/webhooks/channel3", async (c) => {
+	const wake = getWakeshift(c.env);
+	if (!wake || !c.env.CHANNEL3_WEBHOOK_SECRET) return c.notFound();
+	const ctx = c.executionCtx;
+	return handleChannel3Webhook(c.req.raw, c.env, wake, (p) => ctx.waitUntil(p));
 });
 
 type InitializeInfo = Omit<SessionTokenPayload, "sessionId">;

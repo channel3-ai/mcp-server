@@ -16,6 +16,8 @@
 	},
 	"vars": {
 		"CHANNEL3_BASE_URL": "",
+		// Wakeshift console for WAKESHIFT_KEY; empty means https://app.wakeshift.ai.
+		"WAKESHIFT_CORE": "",
 		"POSTHOG_HOST": "https://us.i.posthog.com"
 	},
 	"migrations": [

@@ -103,6 +103,10 @@ export class Analytics {
 		return this.session.sessionId;
 	}
 
+	get clientName(): string | undefined {
+		return this.session.clientName;
+	}
+
 	private hash(input: string): Promise<string> {
 		this.hashPromise ??= sha256Hex(input);
 		return this.hashPromise;

@@ -6,7 +6,7 @@ https://github.com/user-attachments/assets/59508319-aa1f-4462-afbe-52b64638ece3
 
 - **Transport**: Streamable HTTP (protocol revision `2026-07-28`, stateless)
 - **Endpoint**: `https://mcp.trychannel3.com/`
-- **Tools**: `search_products`, `get_products`
+- **Tools**: `search_products`, `get_products`, plus `watch_product`, `unwatch_product` and `list_watched_products` when price and stock alerts are enabled
 - **Prompts**: `find-gift`, `price-check`, `find-dupes`
 - **UI**: results render in an interactive storefront (MCP Apps) on hosts that support it
 
@@ -75,6 +75,27 @@ codex mcp add Channel3 --url https://mcp.trychannel3.com/
 ### Any other client
 
 Register the endpoint as a **Streamable HTTP** server; there is no SSE endpoint. It's stateless, so there's no session to keep alive, and clients on the `2026-07-28` revision can skip the `initialize` handshake entirely.
+
+## Price and Stock Alerts
+
+`watch_product` subscribes a conversation to a product's price and availability changes. When Channel3 detects one, the conversation is woken through [Wakeshift](https://wakeshift.ai/docs), even after it has gone idle.
+
+How it fits together:
+
+1. `watch_product` creates a Channel3 [product subscription](https://channel3.ai/docs/guides/webhooks/setup) on this server's own account, then subscribes the conversation to the matching Wakeshift events (`product.price.changed`, `product.availability.changed`).
+2. Channel3 posts signed webhooks to `POST /webhooks/channel3`. The server verifies the Standard Webhooks signature and emits the occurrence to Wakeshift, using the Channel3 event ID for deduplication.
+3. When an event reaches no watchers, the server cancels its Channel3 subscription, once that subscription is over an hour old.
+
+Users with an API key keep their watches across conversations. On the free tier, watches belong to the conversation's `thread_id`.
+
+Setup:
+
+```bash
+wrangler secret put WAKESHIFT_KEY            # wst_… app key from the Wakeshift console
+wrangler secret put CHANNEL3_WEBHOOK_SECRET  # whsec_… signing secret of the endpoint below
+```
+
+Add `https://mcp.trychannel3.com/webhooks/channel3` as an endpoint in the Channel3 webhook dashboard of the account that owns `DEFAULT_CHANNEL3_API_KEY`, subscribed to `offer.price.changed` and `offer.availability.changed`. Without `WAKESHIFT_KEY` the watch tools aren't registered, and without both secrets the webhook route returns 404.
 
 ## Free Tier and API Keys
 
