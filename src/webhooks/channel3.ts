@@ -1,21 +1,10 @@
+import { WakeshiftError } from "@wakeshift/sdk";
 import { z } from "zod";
 
 import { cancelSubscription, retrieveSubscription } from "../channel3/subscriptions";
 import type { Bindings } from "../types";
-import { isWakeshiftCode, type WakeshiftClient, WakeshiftError } from "../wakeshift/client";
-import {
-	AVAILABILITY_EVENT,
-	type AvailabilityPayload,
-	availabilityText,
-	ensureManifest,
-	PRICE_EVENT,
-	type PricePayload,
-	priceText,
-	resetManifest,
-	WAKE_EVENTS,
-	type WakeEventName,
-	watchArgs,
-} from "../wakeshift/events";
+import type { WakeshiftApp } from "../wakeshift";
+import { toWatchId, type WatchEvents, watchArgs } from "../wakeshift/events";
 
 // Channel3 signs webhooks with Standard Webhooks (Svix): HMAC-SHA256 over
 // "{svix-id}.{svix-timestamp}.{raw body}" keyed by the base64 part of whsec_…
@@ -105,82 +94,60 @@ const availabilityDataSchema = z.object({
 	current: z.enum(["InStock", "OutOfStock"]),
 });
 
-type Occurrence = {
-	name: WakeEventName;
-	payload: PricePayload | AvailabilityPayload;
-	text: string;
-};
+type Envelope = z.infer<typeof envelopeSchema>;
 
-// The Wakeshift occurrence for a Channel3 event, or null for event types we don't relay.
-export function toOccurrence(event: z.infer<typeof envelopeSchema>): Occurrence | null {
-	const subject = {
-		product_id: event.data.subject.product_id,
-		domain: event.data.subject.domain,
-		selection:
-			event.data.subject.selection?.map(({ name, label }) => ({ name, label })) ?? null,
+function subjectOf(event: Envelope) {
+	const { product_id, domain, selection } = event.data.subject;
+	return {
+		watch_id: toWatchId(product_id, event.data.subscription_id),
+		product_id,
+		domain,
+		selection: selection?.map(({ name, label }) => ({ name, label })) ?? null,
 		changed_at: event.timestamp,
 	};
+}
+
+const normPrice = (p: z.infer<typeof priceSchema>) => ({
+	price: p.price,
+	compare_at_price: p.compare_at_price ?? null,
+	currency: p.currency,
+});
+
+// Emits a Channel3 event to its watchers, or returns null for types we don't relay.
+// Redeliveries carry the same event id; Wakeshift emits an id once per day.
+export async function relay(events: WatchEvents, event: Envelope) {
+	const args = watchArgs(event.data.subject.product_id, event.data.subscription_id);
 	if (event.type === "offer.price.changed") {
 		const d = priceDataSchema.parse(event.data);
-		const norm = (p: z.infer<typeof priceSchema>) => ({
-			price: p.price,
-			compare_at_price: p.compare_at_price ?? null,
-			currency: p.currency,
-		});
-		const payload: PricePayload = {
-			...subject,
-			previous: norm(d.previous),
-			current: norm(d.current),
-		};
-		return { name: PRICE_EVENT, payload, text: priceText(payload) };
+		return events.price.emit(
+			args,
+			{ ...subjectOf(event), previous: normPrice(d.previous), current: normPrice(d.current) },
+			{ id: event.id },
+		);
 	}
 	if (event.type === "offer.availability.changed") {
 		const d = availabilityDataSchema.parse(event.data);
-		const payload: AvailabilityPayload = {
-			...subject,
-			previous: d.previous,
-			current: d.current,
-		};
-		return { name: AVAILABILITY_EVENT, payload, text: availabilityText(payload) };
+		return events.availability.emit(
+			args,
+			{ ...subjectOf(event), previous: d.previous, current: d.current },
+			{ id: event.id },
+		);
 	}
 	return null;
-}
-
-type EmitResult = { matched?: number; duplicate?: boolean };
-
-async function emit(wake: WakeshiftClient, body: Record<string, unknown>): Promise<EmitResult> {
-	await ensureManifest(wake);
-	try {
-		return await wake.request<EmitResult>("POST", "/events/emit", body);
-	} catch (err) {
-		// Another deploy may have replaced the manifest since this isolate sent it.
-		if (!isWakeshiftCode(err, "unknown_event")) throw err;
-		resetManifest();
-		await ensureManifest(wake);
-		return wake.request<EmitResult>("POST", "/events/emit", body);
-	}
 }
 
 // Cancels a Channel3 subscription no conversation watches anymore (for either event),
 // so its product stops being refreshed on our account.
 async function reapIfUnwatched(
 	env: Bindings,
-	wake: WakeshiftClient,
+	events: WatchEvents,
 	productId: string,
 	subscriptionId: string,
 ): Promise<void> {
 	try {
 		const args = watchArgs(productId, subscriptionId);
-		for (const name of WAKE_EVENTS) {
-			const status = await wake.request<{ subscriptions?: number }>(
-				"POST",
-				"/events/status",
-				{
-					name,
-					arguments: args,
-				},
-			);
-			if ((status.subscriptions ?? 0) > 0) return;
+		for (const event of [events.price, events.availability]) {
+			if ((await event.status(args)).subscriptions > 0) return;
 		}
 		const sub = await retrieveSubscription(env, subscriptionId);
 		if (sub.status !== "active") return;
@@ -205,7 +172,7 @@ function abort(status: number, message: string): Response {
 export async function handleChannel3Webhook(
 	request: Request,
 	env: Bindings,
-	wake: WakeshiftClient,
+	app: WakeshiftApp,
 	waitUntil: (p: Promise<unknown>) => void,
 ): Promise<Response> {
 	const body = await request.text();
@@ -221,48 +188,35 @@ export async function handleChannel3Webhook(
 	}
 	const envelope = envelopeSchema.safeParse(json);
 	if (!envelope.success) return abort(400, "unrecognized event");
-
-	let occurrence: Occurrence | null;
-	try {
-		occurrence = toOccurrence(envelope.data);
-	} catch {
-		return abort(400, "unrecognized event data");
-	}
-	if (!occurrence) return Response.json({ received: true, relayed: false });
-
 	const event = envelope.data;
+
 	try {
-		const out = await emit(wake, {
-			name: occurrence.name,
-			arguments: watchArgs(event.data.subject.product_id, event.data.subscription_id),
-			payload: occurrence.payload,
-			text: occurrence.text,
-			// Redeliveries carry the same event id; Wakeshift emits an id once per day.
-			id: event.id,
-		});
+		const out = await relay(app.events, event);
+		if (!out) return Response.json({ received: true, relayed: false });
 		console.log(
 			JSON.stringify({
 				event: "channel3_webhook_relayed",
 				type: event.type,
 				event_id: event.id,
 				subscription_id: event.data.subscription_id,
-				matched: out.matched ?? 0,
-				duplicate: Boolean(out.duplicate),
+				matched: out.matched,
+				duplicate: out.duplicate,
 			}),
 		);
-		if (!out.duplicate && (out.matched ?? 0) === 0) {
+		if (!out.duplicate && out.matched === 0) {
 			waitUntil(
 				reapIfUnwatched(
 					env,
-					wake,
+					app.events,
 					event.data.subject.product_id,
 					event.data.subscription_id,
 				),
 			);
 		}
-		return Response.json({ received: true, relayed: true, matched: out.matched ?? 0 });
+		return Response.json({ received: true, relayed: true, matched: out.matched });
 	} catch (err) {
 		console.error("channel3 webhook relay failed", event.id, String(err));
+		if (err instanceof z.ZodError) return abort(400, "unrecognized event data");
 		const permanent =
 			err instanceof WakeshiftError &&
 			err.status >= 400 &&

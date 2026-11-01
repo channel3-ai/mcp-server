@@ -1,15 +1,20 @@
+import { Wakeshift } from "@wakeshift/sdk";
+
 import type { Bindings } from "../types";
-import { WakeshiftClient } from "./client";
+import { defineWatchEvents, type WatchEvents } from "./events";
 
-let cached: { key: string; core: string; client: WakeshiftClient } | null = null;
+export type WakeshiftApp = { wake: Wakeshift; events: WatchEvents };
 
-// One client per isolate: importing the signing key is the expensive part.
-export function getWakeshift(env: Bindings): WakeshiftClient | null {
+let cached: { key: string; app: WakeshiftApp } | null = null;
+
+// A Worker's secrets arrive with each request, so the client is made on the first one
+// and kept, as Wakeshift's Cloudflare Workers guide does.
+export function getWakeshift(env: Bindings): WakeshiftApp | null {
 	const key = env.WAKESHIFT_KEY?.trim();
 	if (!key) return null;
-	const core = env.WAKESHIFT_CORE || "";
-	if (!cached || cached.key !== key || cached.core !== core) {
-		cached = { key, core, client: new WakeshiftClient(key, core || undefined) };
+	if (cached?.key !== key) {
+		const wake = new Wakeshift({ key, core: env.WAKESHIFT_CORE || undefined });
+		cached = { key, app: { wake, events: defineWatchEvents(wake) } };
 	}
-	return cached.client;
+	return cached.app;
 }

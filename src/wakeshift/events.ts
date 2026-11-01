@@ -1,16 +1,9 @@
-import type { WakeshiftClient } from "./client";
+import type { Wakeshift } from "@wakeshift/sdk";
+import { z } from "zod";
 
-// Wakeshift events this server offers. Each subscriber's arguments name the Channel3
-// product and the Channel3 product subscription (whose ID pins its exact scope: merchant
-// domains and variant selection), so an occurrence reaches exactly the conversations
-// watching that scope.
-
-export const PRICE_EVENT = "product.price.changed";
-export const AVAILABILITY_EVENT = "product.availability.changed";
-export type WakeEventName = typeof PRICE_EVENT | typeof AVAILABILITY_EVENT;
-export const WAKE_EVENTS: readonly WakeEventName[] = [PRICE_EVENT, AVAILABILITY_EVENT];
-
-export type WatchArgs = { product: string; subscription: string };
+// Each subscriber's arguments name the Channel3 product and the Channel3 product
+// subscription (whose ID pins its exact scope: merchant domains and variant selection),
+// so an occurrence reaches exactly the conversations watching that scope.
 
 // Wakeshift routes on argument values made of a-z 0-9 . _ -, and Channel3 IDs are
 // mixed-case. This encoding is injective: [a-z0-9.] pass through, an uppercase letter
@@ -25,118 +18,62 @@ export function toArgValue(id: string): string {
 	return out;
 }
 
-export function fromArgValue(value: string): string {
-	return value.replace(/_([a-z])|-([0-9a-f]{4})/g, (_m, upper: string, hex: string) =>
-		upper ? upper.toUpperCase() : String.fromCodePoint(Number.parseInt(hex, 16)),
-	);
-}
-
-export function watchArgs(productId: string, subscriptionId: string): WatchArgs {
+export function watchArgs(productId: string, subscriptionId: string) {
 	return { product: toArgValue(productId), subscription: toArgValue(subscriptionId) };
 }
 
-const ARGUMENTS_SCHEMA = {
-	type: "object",
-	properties: {
-		product: { type: "string", description: "The Channel3 product ID, encoded" },
-		subscription: {
-			type: "string",
-			description: "The Channel3 product subscription ID, encoded",
-		},
-	},
-	required: ["product", "subscription"],
-	additionalProperties: false,
-};
-
-const SUBJECT_PROPERTIES = {
-	product_id: { type: "string", description: "Channel3 product ID" },
-	domain: { type: "string", description: "Merchant domain of the offer, e.g. nike.com" },
-	selection: {
-		type: ["array", "null"],
-		description: "The pinned variant configuration, or null for the offer as a whole",
-		items: {
-			type: "object",
-			properties: { name: { type: "string" }, label: { type: "string" } },
-			required: ["label", "name"],
-		},
-	},
-	changed_at: { type: "string", description: "When the change was committed (ISO 8601)" },
-};
-
-const PRICE_SCHEMA = {
-	type: "object",
-	properties: {
-		price: { type: "number" },
-		compare_at_price: { type: ["number", "null"] },
-		currency: { type: "string" },
-	},
-	required: ["currency", "price"],
-};
-
-const AVAILABILITY_VALUES = { type: "string", enum: ["InStock", "OutOfStock"] };
-
-export type PricePayload = {
-	product_id: string;
-	domain: string;
-	selection: { name: string; label: string }[] | null;
-	changed_at: string;
-	previous: { price: number; compare_at_price: number | null; currency: string };
-	current: { price: number; compare_at_price: number | null; currency: string };
-};
-
-export type AvailabilityPayload = {
-	product_id: string;
-	domain: string;
-	selection: { name: string; label: string }[] | null;
-	changed_at: string;
-	previous: "InStock" | "OutOfStock";
-	current: "InStock" | "OutOfStock";
-};
-
-function manifestEvent(name: WakeEventName, description: string, payloadProps: object) {
-	return {
-		name,
-		description,
-		arguments: ARGUMENTS_SCHEMA,
-		payload: {
-			type: "object",
-			properties: { ...SUBJECT_PROPERTIES, ...payloadProps },
-			required: ["changed_at", "current", "domain", "previous", "product_id", "selection"],
-		},
-		// One topic segment per required argument, in name order (as @wakeshift/sdk derives it).
-		topic: `ev/${name}/{product}/{subscription}`,
-	};
+// An agent stops a watch by watch_id: unsubscribing needs the exact arguments, and without
+// sign-in Wakeshift can't list a conversation's subscriptions. Every alert repeats it.
+export function toWatchId(productId: string, subscriptionId: string): string {
+	return `${productId}:${subscriptionId}`;
 }
 
-export const MANIFEST_EVENTS = [
-	manifestEvent(PRICE_EVENT, "A watched product's price changed at a retailer", {
-		previous: PRICE_SCHEMA,
-		current: PRICE_SCHEMA,
-	}),
-	manifestEvent(AVAILABILITY_EVENT, "A watched product went in or out of stock at a retailer", {
-		previous: AVAILABILITY_VALUES,
-		current: AVAILABILITY_VALUES,
-	}),
-];
-
-// Merge (never replace) our events into the app's manifest once per isolate, as
-// @wakeshift/sdk's attach does. A failed send is retried on the next call.
-let manifestSent: Promise<void> | null = null;
-
-export function ensureManifest(client: WakeshiftClient): Promise<void> {
-	manifestSent ??= client
-		.request("POST", "/manifest/merge", { events: MANIFEST_EVENTS })
-		.then(() => undefined)
-		.catch((err) => {
-			manifestSent = null;
-			throw err;
-		});
-	return manifestSent;
+export function parseWatchId(
+	watchId: string,
+): { productId: string; subscriptionId: string } | null {
+	const i = watchId.indexOf(":");
+	if (i <= 0 || i === watchId.length - 1) return null;
+	return { productId: watchId.slice(0, i), subscriptionId: watchId.slice(i + 1) };
 }
 
-export function resetManifest(): void {
-	manifestSent = null;
-}
+const argsSchema = z.object({
+	product: z.string().describe("The Channel3 product ID, encoded"),
+	subscription: z.string().describe("The Channel3 product subscription ID, encoded"),
+});
+
+const subjectShape = {
+	watch_id: z.string().describe("Pass to unwatch_product to stop this watch"),
+	product_id: z.string().describe("Channel3 product ID"),
+	domain: z.string().describe("Merchant domain of the offer, e.g. nike.com"),
+	selection: z
+		.array(z.object({ name: z.string(), label: z.string() }))
+		.nullable()
+		.describe("The pinned variant configuration, or null for the offer as a whole"),
+	changed_at: z.string().describe("When the change was committed (ISO 8601)"),
+};
+
+const priceSchema = z.object({
+	price: z.number(),
+	compare_at_price: z.number().nullable(),
+	currency: z.string(),
+});
+
+const availabilitySchema = z.enum(["InStock", "OutOfStock"]);
+
+const pricePayloadSchema = z.object({
+	...subjectShape,
+	previous: priceSchema,
+	current: priceSchema,
+});
+
+const availabilityPayloadSchema = z.object({
+	...subjectShape,
+	previous: availabilitySchema,
+	current: availabilitySchema,
+});
+
+export type PricePayload = z.infer<typeof pricePayloadSchema>;
+export type AvailabilityPayload = z.infer<typeof availabilityPayloadSchema>;
 
 function money(amount: number, currency: string): string {
 	try {
@@ -150,6 +87,9 @@ function variant(selection: { label: string }[] | null): string {
 	return selection?.length ? ` (${selection.map((s) => s.label).join(", ")})` : "";
 }
 
+const followUp = (p: { watch_id: string }) =>
+	`Call get_products with this product ID for current offers. To stop this alert, call unwatch_product with watch_id ${p.watch_id}.`;
+
 // The line the woken agent reads first. Wakeshift caps it at 1000 bytes.
 export function priceText(p: PricePayload): string {
 	const from = money(p.previous.price, p.previous.currency);
@@ -160,16 +100,35 @@ export function priceText(p: PricePayload): string {
 			: p.current.price > p.previous.price
 				? "rose"
 				: "changed";
-	return (
-		`Price ${verb} on Channel3 product ${p.product_id}${variant(p.selection)} at ${p.domain}: ` +
-		`${from} → ${to}. Call get_products with this product ID for current offers.`
-	).slice(0, 1000);
+	return `Price ${verb} on Channel3 product ${p.product_id}${variant(p.selection)} at ${p.domain}: ${from} → ${to}. ${followUp(p)}`.slice(
+		0,
+		1000,
+	);
 }
 
 export function availabilityText(p: AvailabilityPayload): string {
 	const state = p.current === "InStock" ? "back in stock" : "out of stock";
-	return (
-		`Channel3 product ${p.product_id}${variant(p.selection)} is ${state} at ${p.domain}. ` +
-		"Call get_products with this product ID for current offers."
-	).slice(0, 1000);
+	return `Channel3 product ${p.product_id}${variant(p.selection)} is ${state} at ${p.domain}. ${followUp(p)}`.slice(
+		0,
+		1000,
+	);
 }
+
+export function defineWatchEvents(wake: Wakeshift) {
+	return {
+		price: wake.defineEvent("product.price.changed", {
+			description: "A watched product's price changed at a retailer",
+			args: argsSchema,
+			payload: pricePayloadSchema,
+			text: priceText,
+		}),
+		availability: wake.defineEvent("product.availability.changed", {
+			description: "A watched product went in or out of stock at a retailer",
+			args: argsSchema,
+			payload: availabilityPayloadSchema,
+			text: availabilityText,
+		}),
+	};
+}
+
+export type WatchEvents = ReturnType<typeof defineWatchEvents>;

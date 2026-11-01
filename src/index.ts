@@ -31,10 +31,10 @@ app.use("/", async (c, next) => {
 // Channel3 product-subscription webhooks, relayed to watching conversations via Wakeshift.
 // Registered before the analytics middleware: these aren't MCP traffic.
 app.post("/webhooks/channel3", async (c) => {
-	const wake = getWakeshift(c.env);
-	if (!wake || !c.env.CHANNEL3_WEBHOOK_SECRET) return c.notFound();
+	const wakeshift = getWakeshift(c.env);
+	if (!wakeshift || !c.env.CHANNEL3_WEBHOOK_SECRET) return c.notFound();
 	const ctx = c.executionCtx;
-	return handleChannel3Webhook(c.req.raw, c.env, wake, (p) => ctx.waitUntil(p));
+	return handleChannel3Webhook(c.req.raw, c.env, wakeshift, (p) => ctx.waitUntil(p));
 });
 
 type InitializeInfo = Omit<SessionTokenPayload, "sessionId">;

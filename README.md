@@ -6,7 +6,7 @@ https://github.com/user-attachments/assets/59508319-aa1f-4462-afbe-52b64638ece3
 
 - **Transport**: Streamable HTTP (protocol revision `2026-07-28`, stateless)
 - **Endpoint**: `https://mcp.trychannel3.com/`
-- **Tools**: `search_products`, `get_products`, plus `watch_product`, `unwatch_product` and `list_watched_products` when price and stock alerts are enabled
+- **Tools**: `search_products`, `get_products`, plus `watch_product` and `unwatch_product` when price and stock alerts are enabled
 - **Prompts**: `find-gift`, `price-check`, `find-dupes`
 - **UI**: results render in an interactive storefront (MCP Apps) on hosts that support it
 
@@ -86,7 +86,7 @@ How it fits together:
 2. Channel3 posts signed webhooks to `POST /webhooks/channel3`. The server verifies the Standard Webhooks signature and emits the occurrence to Wakeshift, using the Channel3 event ID for deduplication.
 3. When an event reaches no watchers, the server cancels its Channel3 subscription, once that subscription is over an hour old.
 
-Users with an API key keep their watches across conversations. On the free tier, watches belong to the conversation's `thread_id`.
+There's no sign-in, so each watch belongs to the conversation that made it. `watch_product` returns a `watch_id`, every alert repeats it, and `unwatch_product` takes it.
 
 Setup:
 
@@ -94,6 +94,8 @@ Setup:
 wrangler secret put WAKESHIFT_KEY            # wst_… app key from the Wakeshift console
 wrangler secret put CHANNEL3_WEBHOOK_SECRET  # whsec_… signing secret of the endpoint below
 ```
+
+Waking uses `@wakeshift/sdk`, which needs `@modelcontextprotocol/server` 2.3 or later: on 2.0 to 2.2, Claude Code's background wait fails with `Method not found` and the conversation is never woken.
 
 Add `https://mcp.trychannel3.com/webhooks/channel3` as an endpoint in the Channel3 webhook dashboard of the account that owns `DEFAULT_CHANNEL3_API_KEY`, subscribed to `offer.price.changed` and `offer.availability.changed`. Without `WAKESHIFT_KEY` the watch tools aren't registered, and without both secrets the webhook route returns 404.
 
