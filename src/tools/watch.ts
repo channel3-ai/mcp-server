@@ -54,8 +54,17 @@ const UnwatchProductSchema = z.object({
 export function registerWatchTools(server: McpServer, ctx: ToolContext, app: WakeshiftApp) {
 	// Our tools create the Channel3 subscription that makes a watch fire, so the generic
 	// subscribe_events stays off. Without sign-in, list_subscriptions could only ever
-	// fail, and unwatch_product covers stopping a watch.
-	const attached = app.wake.attach(server, { tools: [] });
+	// fail, and unwatch_product covers stopping a watch. The wait tool (Claude Code's
+	// wake path with nothing installed) is opt-in since @wakeshift/sdk 0.10: it holds a
+	// request for about 20 seconds, so the Worker's request timeout must exceed that.
+	const attached = app.wake.attach(server, {
+		tools: {
+			wait: { enabled: true },
+			subscribe: { enabled: false },
+			list: { enabled: false },
+			unsubscribe: { enabled: false },
+		},
+	});
 	const { price, availability } = app.events;
 
 	server.registerTool(
@@ -77,72 +86,76 @@ export function registerWatchTools(server: McpServer, ctx: ToolContext, app: Wak
 				openWorldHint: true,
 			},
 		},
-		attached.events("watch_product", async (params, call) => {
-			const threadId = resolveThreadId(params.thread_id);
-			return runTool(
-				"watch_product",
-				ctx,
-				params,
-				async (p) => {
-					const selection = p.selected_options
-						? Object.entries(p.selected_options).map(([name, label]) => ({
-								name,
-								label,
-							}))
-						: undefined;
-					const sub = await createWatchSubscription(ctx.env, {
-						productId: p.product_id,
-						domains: p.domains,
-						selection,
-					});
-					const args = watchArgs(sub.subscription_id);
-					const pinned =
-						sub.selection?.map(({ name, label }) => ({ name, label })) ?? null;
-					const notifyOn = [...new Set(p.notify_on)];
-					const scope = [
-						sub.domains?.length ? ` at ${sub.domains.join(", ")}` : "",
-						pinned ? ` (${pinned.map((s) => s.label).join(", ")})` : "",
-					].join("");
-					const reason = `Watching ${notifyOn.join(" and ")} on Channel3 product ${sub.product_id}${scope}`;
-					const created: boolean[] = [];
-					for (const kind of notifyOn) {
-						const event = kind === "price" ? price : availability;
-						const s = await call.subscribe(event, args, {
-							reason,
-							label: sub.product_id,
+		attached.events(
+			"watch_product",
+			{ subscribes: [price, availability] },
+			async (params, call) => {
+				const threadId = resolveThreadId(params.thread_id);
+				return runTool(
+					"watch_product",
+					ctx,
+					params,
+					async (p) => {
+						const selection = p.selected_options
+							? Object.entries(p.selected_options).map(([name, label]) => ({
+									name,
+									label,
+								}))
+							: undefined;
+						const sub = await createWatchSubscription(ctx.env, {
+							productId: p.product_id,
+							domains: p.domains,
+							selection,
 						});
-						created.push(s.created);
-					}
-					return {
-						watch_id: sub.subscription_id,
-						product_id: sub.product_id,
-						notify_on: notifyOn,
-						domains: sub.domains ?? null,
-						selection: pinned,
-						already_watching: !created.some(Boolean),
-						thread_id: threadId,
-					};
-				},
-				{
-					trackProperties: { thread_id: threadId },
-					summarize: (r) =>
-						[
-							`${r.already_watching ? "Already watching" : "Now watching"} ${r.notify_on.join(" and ")} on product ${r.product_id}` +
-								`${r.selection ? ` (${r.selection.map((s) => s.label).join(", ")})` : ""}` +
-								`${r.domains ? ` at ${r.domains.join(", ")}` : ""}.`,
-							`watch_id: ${r.watch_id}`,
-							...(r.selection
-								? [
-										`Variant: ${r.selection.map((s) => `${s.name} ${s.label}`).join(", ")}. If that isn't what the user asked for, call watch_product again with the right selected_options and unwatch this one.`,
-									]
-								: []),
-							"Channel3 re-checks watched products daily, and you'll be told here when a change is detected.",
-							"",
-							...threadIdSummaryLines(threadId),
-						].join("\n"),
-				},
-			);
-		}),
+						const args = watchArgs(sub.subscription_id);
+						const pinned =
+							sub.selection?.map(({ name, label }) => ({ name, label })) ?? null;
+						const notifyOn = [...new Set(p.notify_on)];
+						const scope = [
+							sub.domains?.length ? ` at ${sub.domains.join(", ")}` : "",
+							pinned ? ` (${pinned.map((s) => s.label).join(", ")})` : "",
+						].join("");
+						const reason = `Watching ${notifyOn.join(" and ")} on Channel3 product ${sub.product_id}${scope}`;
+						const created: boolean[] = [];
+						for (const kind of notifyOn) {
+							const event = kind === "price" ? price : availability;
+							const s = await call.subscribe(event, args, {
+								reason,
+								label: sub.product_id,
+							});
+							created.push(s.created);
+						}
+						return {
+							watch_id: sub.subscription_id,
+							product_id: sub.product_id,
+							notify_on: notifyOn,
+							domains: sub.domains ?? null,
+							selection: pinned,
+							already_watching: !created.some(Boolean),
+							thread_id: threadId,
+						};
+					},
+					{
+						trackProperties: { thread_id: threadId },
+						summarize: (r) =>
+							[
+								`${r.already_watching ? "Already watching" : "Now watching"} ${r.notify_on.join(" and ")} on product ${r.product_id}` +
+									`${r.selection ? ` (${r.selection.map((s) => s.label).join(", ")})` : ""}` +
+									`${r.domains ? ` at ${r.domains.join(", ")}` : ""}.`,
+								`watch_id: ${r.watch_id}`,
+								...(r.selection
+									? [
+											`Variant: ${r.selection.map((s) => `${s.name} ${s.label}`).join(", ")}. If that isn't what the user asked for, call watch_product again with the right selected_options and unwatch this one.`,
+										]
+									: []),
+								"Channel3 re-checks watched products daily, and you'll be told here when a change is detected.",
+								"",
+								...threadIdSummaryLines(threadId),
+							].join("\n"),
+					},
+				);
+			},
+		),
 	);
 
 	server.registerTool(
