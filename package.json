@@ -19,7 +19,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.2",
-		"@cloudflare/workers-types": "^4.20260701.1",
+		"@cloudflare/workers-types": "^4.20260702.1",
 		"@modelcontextprotocol/inspector": "^2.0.0",
 		"@tailwindcss/vite": "^4.3.3",
 		"@types/node": "^26.1.0",
