@@ -41,8 +41,8 @@ importers:
         specifier: ^5.101.4
         version: 5.102.8(react@19.2.8)
       '@wakeshift/sdk':
-        specifier: ^0.7.0
-        version: 0.7.0(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.1)(zod@4.5.4))(@modelcontextprotocol/server@2.4.0)(zod@4.5.4)
+        specifier: ^0.10.2
+        version: 0.10.2(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.1)(zod@4.5.4))(@modelcontextprotocol/server@2.4.0)(zod@4.5.4)
       agents:
         specifier: ^0.32.0
         version: 0.32.0(@babel/core@8.0.1)(@babel/runtime@7.29.7)(@modelcontextprotocol/client@2.4.0)(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.1)(zod@4.5.4))(@modelcontextprotocol/server@2.4.0)(react@19.2.8)(rolldown@1.2.7)(vite@8.2.2(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))(zod@4.5.4)
@@ -2037,13 +2037,13 @@ packages:
       oxc-transform-react:
         optional: true
 
-  '@wakeshift/sdk@0.7.0':
-    resolution: {integrity: sha512-jx4MIh1qSwuIVNr1sJ/jsY3oUYaFajvatUfSh/Hv6hhi7Per9gq8aMX6IyIwO2lNkEvZQhknRVU1QIN3UsSB+g==}
+  '@wakeshift/sdk@0.10.2':
+    resolution: {integrity: sha512-7U9Ya0JnHVzCMllh2OF7wDqgG0QZCGFpyW9kLaNHlhu7ukODqT5kDtELdcRhcQnloXGD3bDmUv3kz62RMIN+hQ==}
     engines: {node: '>=22'}
     peerDependencies:
       '@mastra/mcp': ^2.7.0
       '@modelcontextprotocol/sdk': ^1.23.0
-      '@modelcontextprotocol/server': ^2.0.0
+      '@modelcontextprotocol/server': ^2.3.0
       xmcp: ^1.9.0
       zod: ^3.25.0 || ^4.0.0
     peerDependenciesMeta:
@@ -5198,7 +5198,7 @@ snapshots:
     optionalDependencies:
       '@rolldown/plugin-babel': 0.2.4(@babel/core@8.0.1)(@babel/runtime@7.29.7)(rolldown@1.2.7)(vite@8.2.2(@types/node@26.5.0)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0))
 
-  '@wakeshift/sdk@0.7.0(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.1)(zod@4.5.4))(@modelcontextprotocol/server@2.4.0)(zod@4.5.4)':
+  '@wakeshift/sdk@0.10.2(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.1)(zod@4.5.4))(@modelcontextprotocol/server@2.4.0)(zod@4.5.4)':
     dependencies:
       zod: 4.5.4
     optionalDependencies:
