@@ -78,7 +78,7 @@ Register the endpoint as a **Streamable HTTP** server; there is no SSE endpoint.
 
 ## Price and Stock Alerts
 
-`watch_product` subscribes a conversation to a product's price and availability changes. When Channel3 detects one, the conversation is woken through [Wakeshift](https://wakeshift.ai/docs), even after it has gone idle.
+`watch_product` subscribes a conversation to one variant's price and availability changes, including retailers starting or stopping selling it. A product with options needs a value for every option in `selected_options`, and the error lists any that are missing. When Channel3 detects a change, the conversation is woken through [Wakeshift](https://wakeshift.ai/docs), even after it has gone idle.
 
 How it fits together:
 
@@ -97,7 +97,7 @@ wrangler secret put CHANNEL3_WEBHOOK_SECRET  # whsec_… signing secret of the e
 
 Waking uses `@wakeshift/sdk`, which needs `@modelcontextprotocol/server` 2.3 or later: on 2.0 to 2.2, Claude Code's background wait fails with `Method not found` and the conversation is never woken.
 
-Add `https://mcp.trychannel3.com/webhooks/channel3` as an endpoint in the Channel3 webhook dashboard of the account that owns `DEFAULT_CHANNEL3_API_KEY`, subscribed to `offer.price.changed` and `offer.availability.changed`. Without `WAKESHIFT_KEY` the watch tools aren't registered, and without both secrets the webhook route returns 404.
+Add `https://mcp.trychannel3.com/webhooks/channel3` as an endpoint in the Channel3 webhook dashboard of the account that owns `DEFAULT_CHANNEL3_API_KEY`, subscribed to `offer.price.changed`, `offer.availability.changed`, `offer.created` and `offer.deleted`. Without `WAKESHIFT_KEY` the watch tools aren't registered, and without both secrets the webhook route returns 404.
 
 ## Free Tier and API Keys
 

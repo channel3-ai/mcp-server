@@ -4,7 +4,7 @@ import { z } from "zod";
 import { cancelSubscription, retrieveSubscription } from "../channel3/subscriptions";
 import type { Bindings } from "../types";
 import type { WakeshiftApp } from "../wakeshift";
-import { toWatchId, type WatchEvents, watchArgs } from "../wakeshift/events";
+import { type WatchEvents, watchArgs } from "../wakeshift/events";
 
 // Channel3 signs webhooks with Standard Webhooks (Svix): HMAC-SHA256 over
 // "{svix-id}.{svix-timestamp}.{raw body}" keyed by the base64 part of whsec_…
@@ -94,12 +94,19 @@ const availabilityDataSchema = z.object({
 	current: z.enum(["InStock", "OutOfStock"]),
 });
 
+const lifecycleDataSchema = z.object({
+	offer: z.object({
+		price: priceSchema,
+		availability: z.enum(["InStock", "OutOfStock"]),
+	}),
+});
+
 type Envelope = z.infer<typeof envelopeSchema>;
 
 function subjectOf(event: Envelope) {
 	const { product_id, domain, selection } = event.data.subject;
 	return {
-		watch_id: toWatchId(product_id, event.data.subscription_id),
+		watch_id: event.data.subscription_id,
 		product_id,
 		domain,
 		selection: selection?.map(({ name, label }) => ({ name, label })) ?? null,
@@ -116,7 +123,7 @@ const normPrice = (p: z.infer<typeof priceSchema>) => ({
 // Emits a Channel3 event to its watchers, or returns null for types we don't relay.
 // Redeliveries carry the same event id; Wakeshift emits an id once per day.
 export async function relay(events: WatchEvents, event: Envelope) {
-	const args = watchArgs(event.data.subject.product_id, event.data.subscription_id);
+	const args = watchArgs(event.data.subscription_id);
 	if (event.type === "offer.price.changed") {
 		const d = priceDataSchema.parse(event.data);
 		return events.price.emit(
@@ -129,7 +136,41 @@ export async function relay(events: WatchEvents, event: Envelope) {
 		const d = availabilityDataSchema.parse(event.data);
 		return events.availability.emit(
 			args,
-			{ ...subjectOf(event), previous: d.previous, current: d.current },
+			{
+				...subjectOf(event),
+				change: "stock",
+				previous: d.previous,
+				current: d.current,
+				price: null,
+			},
+			{ id: event.id },
+		);
+	}
+	if (event.type === "offer.created") {
+		const { offer } = lifecycleDataSchema.parse(event.data);
+		return events.availability.emit(
+			args,
+			{
+				...subjectOf(event),
+				change: "listed",
+				previous: null,
+				current: offer.availability,
+				price: normPrice(offer.price),
+			},
+			{ id: event.id },
+		);
+	}
+	if (event.type === "offer.deleted") {
+		const { offer } = lifecycleDataSchema.parse(event.data);
+		return events.availability.emit(
+			args,
+			{
+				...subjectOf(event),
+				change: "delisted",
+				previous: offer.availability,
+				current: null,
+				price: null,
+			},
 			{ id: event.id },
 		);
 	}
@@ -141,11 +182,10 @@ export async function relay(events: WatchEvents, event: Envelope) {
 async function reapIfUnwatched(
 	env: Bindings,
 	events: WatchEvents,
-	productId: string,
 	subscriptionId: string,
 ): Promise<void> {
 	try {
-		const args = watchArgs(productId, subscriptionId);
+		const args = watchArgs(subscriptionId);
 		for (const event of [events.price, events.availability]) {
 			if ((await event.status(args)).subscriptions > 0) return;
 		}
@@ -204,14 +244,7 @@ export async function handleChannel3Webhook(
 			}),
 		);
 		if (!out.duplicate && out.matched === 0) {
-			waitUntil(
-				reapIfUnwatched(
-					env,
-					app.events,
-					event.data.subject.product_id,
-					event.data.subscription_id,
-				),
-			);
+			waitUntil(reapIfUnwatched(env, app.events, event.data.subscription_id));
 		}
 		return Response.json({ received: true, relayed: true, matched: out.matched });
 	} catch (err) {

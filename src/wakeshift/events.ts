@@ -1,9 +1,10 @@
 import type { Wakeshift } from "@wakeshift/sdk";
 import { z } from "zod";
 
-// Each subscriber's arguments name the Channel3 product and the Channel3 product
-// subscription (whose ID pins its exact scope: merchant domains and variant selection),
-// so an occurrence reaches exactly the conversations watching that scope.
+// Each subscriber's argument names the Channel3 product subscription, whose ID pins its exact
+// scope (product, merchant domains and variant), so an occurrence reaches exactly the conversations
+// watching that scope. It's the only stable handle: an event's product ID can differ from the one
+// the watch was created with, when Channel3 repoints a subscription.
 
 // Wakeshift routes on argument values made of a-z 0-9 . _ -, and Channel3 IDs are
 // mixed-case. This encoding is injective: [a-z0-9.] pass through, an uppercase letter
@@ -18,26 +19,11 @@ export function toArgValue(id: string): string {
 	return out;
 }
 
-export function watchArgs(productId: string, subscriptionId: string) {
-	return { product: toArgValue(productId), subscription: toArgValue(subscriptionId) };
-}
-
-// An agent stops a watch by watch_id: unsubscribing needs the exact arguments, and without
-// sign-in Wakeshift can't list a conversation's subscriptions. Every alert repeats it.
-export function toWatchId(productId: string, subscriptionId: string): string {
-	return `${productId}:${subscriptionId}`;
-}
-
-export function parseWatchId(
-	watchId: string,
-): { productId: string; subscriptionId: string } | null {
-	const i = watchId.indexOf(":");
-	if (i <= 0 || i === watchId.length - 1) return null;
-	return { productId: watchId.slice(0, i), subscriptionId: watchId.slice(i + 1) };
+export function watchArgs(subscriptionId: string) {
+	return { subscription: toArgValue(subscriptionId) };
 }
 
 const argsSchema = z.object({
-	product: z.string().describe("The Channel3 product ID, encoded"),
 	subscription: z.string().describe("The Channel3 product subscription ID, encoded"),
 });
 
@@ -68,8 +54,14 @@ const pricePayloadSchema = z.object({
 
 const availabilityPayloadSchema = z.object({
 	...subjectShape,
-	previous: availabilitySchema,
-	current: availabilitySchema,
+	change: z
+		.enum(["stock", "listed", "delisted"])
+		.describe(
+			"stock: the retailer's stock flipped. listed: the retailer started selling the product. delisted: it stopped.",
+		),
+	previous: availabilitySchema.nullable().describe("Null when listed"),
+	current: availabilitySchema.nullable().describe("Null when delisted"),
+	price: priceSchema.nullable().describe("The retailer's price when listed, otherwise null"),
 });
 
 export type PricePayload = z.infer<typeof pricePayloadSchema>;
@@ -106,9 +98,18 @@ export function priceText(p: PricePayload): string {
 	);
 }
 
+function availabilityChange(p: AvailabilityPayload): string {
+	if (p.change === "delisted") return `is no longer sold at ${p.domain}`;
+	if (p.change === "listed") {
+		const price = p.price ? ` for ${money(p.price.price, p.price.currency)}` : "";
+		const stock = p.current === "OutOfStock" ? ", currently out of stock" : "";
+		return `is now sold at ${p.domain}${price}${stock}`;
+	}
+	return `is ${p.current === "InStock" ? "back in stock" : "out of stock"} at ${p.domain}`;
+}
+
 export function availabilityText(p: AvailabilityPayload): string {
-	const state = p.current === "InStock" ? "back in stock" : "out of stock";
-	return `Channel3 product ${p.product_id}${variant(p.selection)} is ${state} at ${p.domain}. ${followUp(p)}`.slice(
+	return `Channel3 product ${p.product_id}${variant(p.selection)} ${availabilityChange(p)}. ${followUp(p)}`.slice(
 		0,
 		1000,
 	);
@@ -123,7 +124,8 @@ export function defineWatchEvents(wake: Wakeshift) {
 			text: priceText,
 		}),
 		availability: wake.defineEvent("product.availability.changed", {
-			description: "A watched product went in or out of stock at a retailer",
+			description:
+				"A watched product went in or out of stock at a retailer, or a retailer started or stopped selling it",
 			args: argsSchema,
 			payload: availabilityPayloadSchema,
 			text: availabilityText,
