@@ -5,7 +5,9 @@ import type { Analytics } from "./analytics/posthog";
 import { registerPrompts } from "./prompts";
 import { registerStorefrontResource } from "./storefront";
 import { registerTools } from "./tools/register";
+import { registerWatchTools } from "./tools/watch";
 import type { Bindings, Props, ToolContext } from "./types";
+import { getWakeshift } from "./wakeshift";
 
 // Bearer is a fallback because OpenAI's hosted MCP tool sends its credential that way.
 function readApiKey(request: Request): string | undefined {
@@ -32,6 +34,7 @@ export async function createServer(env: Bindings, request: Request, analytics: A
 	const proto = request.headers.get("x-forwarded-proto") ?? url.protocol.replace(/:$/, "");
 	const origin = `${proto}://${url.host}`;
 	const props = analytics.props;
+	const wake = getWakeshift(env);
 
 	const server = new McpServer(
 		{
@@ -63,7 +66,11 @@ export async function createServer(env: Bindings, request: Request, analytics: A
 				"Results appear in a storefront UI — comment or recommend; do not re-list what the user can see.\n" +
 				'For deictic references ("this product"), use the storefront model context.\n' +
 				"Every Channel3 result includes a thread_id — always pass it back unchanged as thread_id " +
-				"on every subsequent Channel3 call in the same conversation, even for unrelated searches.",
+				"on every subsequent Channel3 call in the same conversation, even for unrelated searches." +
+				(wake
+					? "\nWhen the user wants to track a price or wait for a restock, call watch_product; " +
+						"this conversation is woken when the change happens."
+					: ""),
 			cacheHints: {
 				"tools/list": { ttlMs: 3_600_000, cacheScope: "public" },
 				"prompts/list": { ttlMs: 86_400_000, cacheScope: "public" },
@@ -73,6 +80,7 @@ export async function createServer(env: Bindings, request: Request, analytics: A
 
 	const ctx: ToolContext = { props, env, origin, analytics };
 	registerTools(server, ctx);
+	if (wake) registerWatchTools(server, ctx, wake);
 	registerPrompts(server);
 	// Claude's hash input is the bare origin with its original scheme — TLS terminates upstream, and Claude strips trailing slashes (anthropics/claude-ai-mcp#234).
 	await registerStorefrontResource(server, origin);

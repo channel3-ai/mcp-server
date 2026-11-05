@@ -6,7 +6,7 @@ https://github.com/user-attachments/assets/59508319-aa1f-4462-afbe-52b64638ece3
 
 - **Transport**: Streamable HTTP (protocol revision `2026-07-28`, stateless)
 - **Endpoint**: `https://mcp.trychannel3.com/`
-- **Tools**: `search_products`, `get_products`
+- **Tools**: `search_products`, `get_products`, plus `watch_product` and `unwatch_product` when price and stock alerts are enabled
 - **Prompts**: `find-gift`, `price-check`, `find-dupes`
 - **UI**: results render in an interactive storefront (MCP Apps) on hosts that support it
 
@@ -75,6 +75,29 @@ codex mcp add Channel3 --url https://mcp.trychannel3.com/
 ### Any other client
 
 Register the endpoint as a **Streamable HTTP** server; there is no SSE endpoint. It's stateless, so there's no session to keep alive, and clients on the `2026-07-28` revision can skip the `initialize` handshake entirely.
+
+## Price and Stock Alerts
+
+`watch_product` subscribes a conversation to one variant's price and availability changes, including retailers starting or stopping selling it. A product with options needs a value for every option in `selected_options`, and the error lists any that are missing. When Channel3 detects a change, the conversation is woken through [Wakeshift](https://wakeshift.ai/docs), even after it has gone idle.
+
+How it fits together:
+
+1. `watch_product` creates a Channel3 [product subscription](https://channel3.ai/docs/guides/webhooks/setup) on this server's own account, then subscribes the conversation to the matching Wakeshift events (`product.price.changed`, `product.availability.changed`).
+2. Channel3 posts signed webhooks to `POST /webhooks/channel3`. The server verifies the Standard Webhooks signature and emits the occurrence to Wakeshift, using the Channel3 event ID for deduplication.
+3. When an event reaches no watchers, the server cancels its Channel3 subscription, once that subscription is over an hour old.
+
+There's no sign-in, so each watch belongs to the conversation that made it. `watch_product` returns a `watch_id`, every alert repeats it, and `unwatch_product` takes it.
+
+Setup:
+
+```bash
+wrangler secret put WAKESHIFT_KEY            # wst_… app key from the Wakeshift console
+wrangler secret put CHANNEL3_WEBHOOK_SECRET  # whsec_… signing secret of the endpoint below
+```
+
+Waking uses `@wakeshift/sdk`, which needs `@modelcontextprotocol/server` 2.3 or later: on 2.0 to 2.2, Claude Code's background wait fails with `Method not found` and the conversation is never woken.
+
+Add `https://mcp.trychannel3.com/webhooks/channel3` as an endpoint in the Channel3 webhook dashboard of the account that owns `DEFAULT_CHANNEL3_API_KEY`, subscribed to `offer.price.changed`, `offer.availability.changed`, `offer.created` and `offer.deleted`. Without `WAKESHIFT_KEY` the watch tools aren't registered, and without both secrets the webhook route returns 404.
 
 ## Free Tier and API Keys
 

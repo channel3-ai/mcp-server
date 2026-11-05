@@ -6,6 +6,9 @@ interface __BaseEnv_Env {
 	CHANNEL3_BASE_URL: string;
 	POSTHOG_API_KEY: string;
 	POSTHOG_HOST: string;
+	WAKESHIFT_CORE: string;
+	WAKESHIFT_KEY?: string;
+	CHANNEL3_WEBHOOK_SECRET: string;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {
@@ -18,7 +21,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DEFAULT_CHANNEL3_API_KEY" | "CHANNEL3_BASE_URL" | "POSTHOG_API_KEY" | "POSTHOG_HOST">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DEFAULT_CHANNEL3_API_KEY" | "CHANNEL3_BASE_URL" | "POSTHOG_API_KEY" | "POSTHOG_HOST" | "WAKESHIFT_CORE" | "WAKESHIFT_KEY" | "CHANNEL3_WEBHOOK_SECRET">> {}
 }
 
 // Begin runtime types
