@@ -28,6 +28,13 @@ app.use("/", async (c, next) => {
 	await next();
 });
 
+const MUSE_CHALLENGE = "60f124efb3edd7ccafea59b3887d2398bc8de5e1dc9288eae609347dbc2422af";
+
+// Muse MCP connector ownership proof.
+app.get(`/.well-known/muse-challenge/${MUSE_CHALLENGE}`, (c) =>
+	c.text(`muse-challenge=${MUSE_CHALLENGE}`),
+);
+
 // Channel3 product-subscription webhooks, relayed to watching conversations via Wakeshift.
 // Registered before the analytics middleware: these aren't MCP traffic.
 app.post("/webhooks/channel3", async (c) => {
