@@ -28,7 +28,7 @@ app.use("/", async (c, next) => {
 	await next();
 });
 
-const MUSE_CHALLENGE = "60f124efb3edd7ccafea59b3887d2398bc8de5e1dc9288eae609347dbc2422af";
+const MUSE_CHALLENGE = "aabbdf66e1f127181cacf1cf6b2e9406b30c2bc25ac27ea31b1510758725bc2a";
 
 // Muse MCP connector ownership proof.
 app.get(`/.well-known/muse-challenge/${MUSE_CHALLENGE}`, (c) =>
