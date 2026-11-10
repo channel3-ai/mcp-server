@@ -41,6 +41,52 @@ export const GetProductsRequestSchema = z.object({
 	thread_id: threadIdParam,
 });
 
+const reviewProductId = z
+	.string()
+	.trim()
+	.min(1)
+	.describe("Channel3 product ID from a search_products or get_products result.");
+
+const reviewerType = z.enum(["human", "agent"]);
+
+// Length limits mirror the backend's, so bad input fails here with a clear message.
+export const SubmitProductReviewSchema = z.object({
+	product_id: reviewProductId,
+	rating: z.number().int().min(1).max(5).describe("Star rating from 1 to 5."),
+	review_text: z.string().trim().min(1).max(4000).optional().describe("Optional written review."),
+	reviewer_type: reviewerType.describe(
+		"`human` when the rating and text are the user's own, `agent` when they are your own assessment.",
+	),
+	thread_id: threadIdParam,
+});
+
+export const SubmitFeedbackSchema = z.object({
+	category: z.enum([
+		"error_response",
+		"performance",
+		"incorrect_behavior",
+		"data_issue",
+		"documentation",
+		"other",
+	]),
+	description: z
+		.string()
+		.trim()
+		.min(1)
+		.max(4000)
+		.describe(
+			"What happened, with the inputs, product IDs and errors needed to reproduce it. Leave out secrets and personal data.",
+		),
+	affected_tool: z
+		.string()
+		.trim()
+		.min(1)
+		.max(100)
+		.optional()
+		.describe("The Channel3 tool where the problem happened, e.g. get_products."),
+	thread_id: threadIdParam,
+});
+
 export const BrowseProductsSchema = z
 	.object({
 		...searchCriteria,
