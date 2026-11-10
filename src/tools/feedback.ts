@@ -4,7 +4,7 @@ import { submitFeedback } from "../channel3/feedback";
 import { SubmitFeedbackSchema } from "../schemas";
 import { resolveThreadId, THREAD_ID_TOOL_DESCRIPTION, threadIdSummaryLines } from "../thread";
 import type { ToolContext } from "../types";
-import { requireApiKey, runTool } from "./helpers";
+import { runTool } from "./helpers";
 
 export function registerFeedbackTool(server: McpServer, ctx: ToolContext) {
 	server.registerTool(
@@ -15,7 +15,6 @@ export function registerFeedbackTool(server: McpServer, ctx: ToolContext) {
 				"Report a problem with Channel3's results or tools to the Channel3 team, such as wrong " +
 				"product data, an error, or slow responses. Include the product IDs and what happened. " +
 				"Leave out secrets and personal data. Not for messages to retailers. " +
-				"Requires a Channel3 API key. " +
 				THREAD_ID_TOOL_DESCRIPTION,
 			inputSchema: SubmitFeedbackSchema,
 			annotations: {
@@ -31,13 +30,10 @@ export function registerFeedbackTool(server: McpServer, ctx: ToolContext) {
 				"submit_feedback",
 				ctx,
 				params,
-				async (p) => {
-					requireApiKey(ctx);
-					return {
-						...(await submitFeedback(ctx.props.apiKey, p, ctx.props.baseURL, threadId)),
-						thread_id: threadId,
-					};
-				},
+				async (p) => ({
+					...(await submitFeedback(ctx.props.apiKey, p, ctx.props.baseURL, threadId)),
+					thread_id: threadId,
+				}),
 				{
 					trackProperties: { thread_id: threadId },
 					summarize: (r) =>

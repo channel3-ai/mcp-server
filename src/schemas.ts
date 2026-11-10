@@ -57,15 +57,6 @@ export const SubmitProductReviewSchema = z.object({
 	reviewer_type: reviewerType.describe(
 		"`human` when the rating and text are the user's own, `agent` when they are your own assessment.",
 	),
-	display_name: z
-		.string()
-		.trim()
-		.min(1)
-		.max(100)
-		.optional()
-		.describe(
-			"Name shown publicly with the review. Only use a name the user gave for this. Omit to show 'Anonymous reviewer'.",
-		),
 	thread_id: threadIdParam,
 });
 

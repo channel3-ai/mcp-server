@@ -1,10 +1,10 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 
-import { submitReview } from "../channel3/reviews";
+import { MCP_REVIEWER_NAME, submitReview } from "../channel3/reviews";
 import { SubmitProductReviewSchema } from "../schemas";
 import { resolveThreadId, THREAD_ID_TOOL_DESCRIPTION, threadIdSummaryLines } from "../thread";
 import type { ToolContext } from "../types";
-import { requireApiKey, runTool } from "./helpers";
+import { runTool } from "./helpers";
 
 export function registerReviewTool(server: McpServer, ctx: ToolContext) {
 	server.registerTool(
@@ -15,7 +15,8 @@ export function registerReviewTool(server: McpServer, ctx: ToolContext) {
 				"Post a star rating (1-5) and optional written review of a product on Channel3. " +
 				"Reviews are public and permanent: they cannot be edited or deleted. Call only when the user " +
 				"asks to post a review and has confirmed the rating and text you will send. " +
-				"One review per product per conversation. Requires a Channel3 API key. " +
+				`Reviews are posted anonymously, shown as '${MCP_REVIEWER_NAME}'. ` +
+				"One review per product per conversation. " +
 				THREAD_ID_TOOL_DESCRIPTION,
 			inputSchema: SubmitProductReviewSchema,
 			annotations: {
@@ -32,7 +33,6 @@ export function registerReviewTool(server: McpServer, ctx: ToolContext) {
 				ctx,
 				params,
 				async (p) => {
-					requireApiKey(ctx);
 					const review = await submitReview(
 						ctx.props.apiKey,
 						p,

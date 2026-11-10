@@ -4,6 +4,9 @@ import type { z } from "zod";
 import type { SubmitProductReviewSchema } from "../schemas";
 import { createClient, withStatusMessages } from "./client";
 
+// Every review from the MCP is anonymous, whoever calls and whatever key they use.
+export const MCP_REVIEWER_NAME = "Anonymous user from MCP";
+
 // The MCP has no end-user identity, so the conversation stands in for the user: the backend
 // allows one review per user_id and product, which turns a retried call into a 409, not a duplicate.
 export async function submitReview(
@@ -17,7 +20,7 @@ export async function submitReview(
 			product_id: params.product_id,
 			rating: params.rating,
 			review_text: params.review_text,
-			reviewer: { type: params.reviewer_type, display_name: params.display_name },
+			reviewer: { type: params.reviewer_type, display_name: MCP_REVIEWER_NAME },
 			user_id: threadId,
 		});
 	} catch (err) {
