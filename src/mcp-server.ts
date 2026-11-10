@@ -63,8 +63,8 @@ export async function createServer(env: Bindings, request: Request, analytics: A
 				"Use Channel3 to search products and compare live retailer offers.\n" +
 				"Call search_products separately for each distinct product type.\n" +
 				"Call get_products for full details by product ID or retailer URL.\n" +
-				"Call list_product_reviews for reviews posted through Channel3. Call submit_product_review " +
-				"only when the user asks to post a review and confirms it: reviews are public and permanent.\n" +
+				"Call submit_product_review only when the user asks to post a review and confirms it: " +
+				"reviews are public and permanent.\n" +
 				"Call submit_feedback to report wrong data or tool errors to the Channel3 team.\n" +
 				"Results appear in a storefront UI — comment or recommend; do not re-list what the user can see.\n" +
 				'For deictic references ("this product"), use the storefront model context.\n' +

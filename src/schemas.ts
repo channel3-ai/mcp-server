@@ -69,14 +69,6 @@ export const SubmitProductReviewSchema = z.object({
 	thread_id: threadIdParam,
 });
 
-export const ListProductReviewsSchema = z.object({
-	product_id: reviewProductId,
-	cursor: z.string().optional().describe("next_cursor from a previous result."),
-	limit: z.number().int().min(1).max(25).default(10),
-	reviewer_type: reviewerType.optional().describe("Only reviews by humans, or only by agents."),
-	thread_id: threadIdParam,
-});
-
 export const SubmitFeedbackSchema = z.object({
 	category: z.enum([
 		"error_response",

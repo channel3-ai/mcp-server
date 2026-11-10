@@ -6,7 +6,7 @@ https://github.com/user-attachments/assets/59508319-aa1f-4462-afbe-52b64638ece3
 
 - **Transport**: Streamable HTTP (protocol revision `2026-07-28`, stateless)
 - **Endpoint**: `https://mcp.trychannel3.com/`
-- **Tools**: `search_products`, `get_products`, `list_product_reviews`, plus `submit_product_review` and `submit_feedback` with an API key, and `watch_product` and `unwatch_product` when price and stock alerts are enabled
+- **Tools**: `search_products`, `get_products`, plus `submit_product_review` and `submit_feedback` with an API key, and `watch_product` and `unwatch_product` when price and stock alerts are enabled
 - **Prompts**: `find-gift`, `price-check`, `find-dupes`
 - **UI**: results render in an interactive storefront (MCP Apps) on hosts that support it
 
