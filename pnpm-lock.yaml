@@ -26,8 +26,8 @@ importers:
   .:
     dependencies:
       '@channel3/sdk':
-        specifier: ^4.6.0
-        version: 4.6.0
+        specifier: ^4.9.0
+        version: 4.9.0
       '@modelcontextprotocol/ext-apps':
         specifier: ^1.7.5
         version: 1.7.5(@modelcontextprotocol/sdk@1.32.2(@cfworker/json-schema@4.1.1)(zod@4.5.4))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.5.4)
@@ -312,8 +312,8 @@ packages:
   '@cfworker/json-schema@4.1.1':
     resolution: {integrity: sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==}
 
-  '@channel3/sdk@4.6.0':
-    resolution: {integrity: sha512-r/lqc36ya37rjVqTNfvCYYQ/E1MvpGFDBdAidb/PvjQ/rfPsfA2cygr5G8utV2vm/mdHdO2jch/OPE0pHMGT8Q==}
+  '@channel3/sdk@4.9.0':
+    resolution: {integrity: sha512-3Cdsk0OfWWiclNKQH27iQ48ieCFwgTvBliqHPG//KRIXg2o3ZKxIyHuIt59n3fglnId0/XrLNjvFiwCPNE61Bw==}
     engines: {node: '>=18.0.0'}
 
   '@cloudflare/kv-asset-handler@0.5.0':
@@ -3710,7 +3710,7 @@ snapshots:
 
   '@cfworker/json-schema@4.1.1': {}
 
-  '@channel3/sdk@4.6.0': {}
+  '@channel3/sdk@4.9.0': {}
 
   '@cloudflare/kv-asset-handler@0.5.0': {}
 

@@ -15,6 +15,16 @@ export const READ_ONLY_ANNOTATIONS = {
 	destructiveHint: false,
 } as const;
 
+// Free-tier callers all share the server's key, so a write would count against every
+// free user's limits and couldn't be traced to anyone. Call inside a runTool handler.
+export function requireApiKey(ctx: ToolContext): void {
+	if (ctx.props.isFreeTier) {
+		throw new Error(
+			"This needs a Channel3 API key. Get one at https://trychannel3.com and send it as an X-API-Key header.",
+		);
+	}
+}
+
 export function errorResponse(err: unknown): ToolCallResult {
 	const message = err instanceof Error ? err.message : String(err);
 	return {
