@@ -13,6 +13,7 @@ export function registerReviewTool(server: McpServer, ctx: ToolContext) {
 			title: "Submit Product Review",
 			description:
 				"Post a star rating (1-5) and optional written review of a product on Channel3. " +
+				"Requires a Channel3 API key (X-API-Key or Authorization: Bearer). " +
 				"Reviews are public and permanent: they cannot be edited or deleted. Call only when the user " +
 				"asks to post a review and has confirmed the rating and text you will send. " +
 				`Reviews are posted anonymously, shown as '${MCP_REVIEWER_NAME}'. ` +
@@ -33,6 +34,11 @@ export function registerReviewTool(server: McpServer, ctx: ToolContext) {
 				ctx,
 				params,
 				async (p) => {
+					if (ctx.props.isFreeTier) {
+						throw new Error(
+							"Submitting a product review requires a Channel3 API key. Pass your key in the X-API-Key header or Authorization: Bearer <key> (get one at https://trychannel3.com).",
+						);
+					}
 					const review = await submitReview(
 						ctx.props.apiKey,
 						p,
